@@ -1,40 +1,45 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
-
-import { Text, View } from '@/components/Themed';
+import { Link, Stack } from "expo-router";
+import { View, Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { FileX, Home } from "lucide-react-native";
 
 export default function NotFoundScreen() {
   return (
-    <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <View style={styles.container}>
-        <Text style={styles.title}>This screen doesn't exist.</Text>
-
-        <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go to home screen!</Text>
+    <SafeAreaView className="flex-1 bg-white">
+      <Stack.Screen options={{ title: "Halaman Tidak Ditemukan" }} />
+      
+      <View className="flex-1 items-center justify-center px-8">
+        {/* Decorative shapes */}
+        <View className="absolute top-20 right-[-30px] w-32 h-32 rounded-full bg-primary-100 opacity-40" />
+        <View className="absolute bottom-40 left-[-20px] w-24 h-24 rounded-lg bg-secondary-100 opacity-40 rotate-12" />
+        
+        {/* Icon */}
+        <View className="w-24 h-24 rounded-full bg-muted items-center justify-center mb-6">
+          <FileX size={48} color="#9CA3AF" strokeWidth={2} />
+        </View>
+        
+        {/* Title */}
+        <Text 
+          className="text-3xl text-foreground font-sans-extrabold text-center"
+          style={{ letterSpacing: -0.6 }}
+        >
+          Oops!
+        </Text>
+        
+        <Text className="text-base text-gray-500 font-sans text-center mt-2">
+          Halaman yang Anda cari tidak ditemukan.
+        </Text>
+        
+        {/* Back to Home Button */}
+        <Link href="/" asChild>
+          <View className="mt-8 h-14 px-8 rounded-md bg-primary items-center justify-center flex-row">
+            <Home size={20} color="#FFFFFF" strokeWidth={2.5} />
+            <Text className="ml-2 text-lg font-sans-bold text-white">
+              Kembali ke Beranda
+            </Text>
+          </View>
         </Link>
       </View>
-    </>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#2e78b7',
-  },
-});
