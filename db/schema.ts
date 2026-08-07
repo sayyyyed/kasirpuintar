@@ -1,0 +1,127 @@
+import { appSchema, tableSchema } from "@nozbe/watermelondb";
+
+const syncColumns = [
+  { name: "created_at", type: "number" },
+  { name: "updated_at", type: "number" },
+  { name: "deleted_at", type: "number" },
+] as const;
+
+export const schema = appSchema({
+  version: 1,
+  tables: [
+    tableSchema({
+      name: "users",
+      columns: [
+        { name: "name", type: "string" },
+        { name: "email", type: "string", isIndexed: true },
+        { name: "role", type: "string" },
+        { name: "pin_hash", type: "string", isOptional: true },
+        { name: "active", type: "boolean" },
+        ...syncColumns,
+      ],
+    }),
+    tableSchema({
+      name: "categories",
+      columns: [
+        { name: "name", type: "string" },
+        { name: "sort_order", type: "number" },
+        ...syncColumns,
+      ],
+    }),
+    tableSchema({
+      name: "products",
+      columns: [
+        { name: "sku", type: "string", isIndexed: true },
+        { name: "barcode", type: "string", isOptional: true, isIndexed: true },
+        { name: "name", type: "string" },
+        { name: "category_id", type: "string", isIndexed: true },
+        { name: "price", type: "number" },
+        { name: "cogs", type: "number" },
+        { name: "stock", type: "number" },
+        { name: "image_url", type: "string", isOptional: true },
+        { name: "active", type: "boolean" },
+        ...syncColumns,
+      ],
+    }),
+    tableSchema({
+      name: "shifts",
+      columns: [
+        { name: "user_id", type: "string", isIndexed: true },
+        { name: "clock_in_at", type: "number" },
+        { name: "clock_out_at", type: "number", isOptional: true },
+        { name: "opening_cash", type: "number" },
+        { name: "closing_cash", type: "number", isOptional: true },
+        { name: "sales_total", type: "number" },
+        { name: "expense_total", type: "number" },
+        { name: "status", type: "string" },
+        ...syncColumns,
+      ],
+    }),
+    tableSchema({
+      name: "transactions",
+      columns: [
+        { name: "shift_id", type: "string", isIndexed: true },
+        { name: "user_id", type: "string", isIndexed: true },
+        { name: "subtotal", type: "number" },
+        { name: "discount", type: "number" },
+        { name: "total", type: "number" },
+        { name: "payment_method", type: "string" },
+        { name: "paid", type: "number" },
+        { name: "change", type: "number" },
+        { name: "created_at", type: "number", isIndexed: true },
+        { name: "updated_at", type: "number" },
+        { name: "deleted_at", type: "number" },
+      ],
+    }),
+    tableSchema({
+      name: "transaction_items",
+      columns: [
+        { name: "transaction_id", type: "string", isIndexed: true },
+        { name: "product_id", type: "string", isIndexed: true },
+        { name: "product_name", type: "string" },
+        { name: "price", type: "number" },
+        { name: "cogs", type: "number" },
+        { name: "qty", type: "number" },
+        { name: "subtotal", type: "number" },
+        ...syncColumns,
+      ],
+    }),
+    tableSchema({
+      name: "stock_movements",
+      columns: [
+        { name: "product_id", type: "string", isIndexed: true },
+        { name: "type", type: "string" },
+        { name: "qty", type: "number" },
+        { name: "ref_type", type: "string", isOptional: true },
+        { name: "ref_id", type: "string", isOptional: true },
+        { name: "note", type: "string", isOptional: true },
+        { name: "created_at", type: "number", isIndexed: true },
+        { name: "updated_at", type: "number" },
+        { name: "deleted_at", type: "number" },
+      ],
+    }),
+    tableSchema({
+      name: "expenses",
+      columns: [
+        { name: "shift_id", type: "string", isIndexed: true },
+        { name: "user_id", type: "string", isIndexed: true },
+        { name: "name", type: "string" },
+        { name: "category", type: "string" },
+        { name: "amount", type: "number" },
+        { name: "note", type: "string", isOptional: true },
+        ...syncColumns,
+      ],
+    }),
+    tableSchema({
+      name: "sync_outbox",
+      columns: [
+        { name: "table_name", type: "string", isIndexed: true },
+        { name: "record_id", type: "string", isIndexed: true },
+        { name: "operation", type: "string" },
+        { name: "payload", type: "string" },
+        { name: "attempts", type: "number" },
+        { name: "created_at", type: "number" },
+      ],
+    }),
+  ],
+});
