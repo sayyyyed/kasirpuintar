@@ -1,0 +1,128 @@
+import { database } from "@/db";
+import * as Crypto from "expo-crypto";
+import { enqueueMutation } from "./helpers";
+
+export type CartItem = {
+  productId: string;
+  productName: string;
+  price: number;
+  cogs: number;
+  qty: number;
+};
+
+export type TransactionInput = {
+  shiftId: string;
+  userId: string;
+  items: CartItem[];
+  paymentMethod: "cash" | "qris" | "transfer";
+  paid: number;
+  discount?: number;
+};
+
+export async function createTransaction(input: TransactionInput) {
+  const id = Crypto.randomUUID();
+  const now = Date.now();
+  const discount = input.discount ?? 0;
+
+  const subtotal = input.items.reduce(
+    (sum, item) => sum + item.price * item.qty,
+    0
+  );
+  const total = subtotal - discount;
+
+  const transactionPayload: Record<string, unknown> = {
+    id,
+    shift_id: input.shiftId,
+    user_id: input.userId,
+    subtotal,
+    discount,
+    total,
+    payment_method: input.paymentMethod,
+    paid: input.paid,
+    change: input.paid - total,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+  };
+
+  await database.write(async () => {
+    await database.get("transactions").create((t: any) => {
+      t._raw.id = id;
+      Object.assign(t._raw, transactionPayload);
+    });
+
+    for (const item of input.items) {
+      const itemId = Crypto.randomUUID();
+      const itemSubtotal = item.price * item.qty;
+
+      await database.get("transaction_items").create((ti: any) => {
+        Object.assign(ti._raw, {
+          id: itemId,
+          transaction_id: id,
+          product_id: item.productId,
+          product_name: item.productName,
+          price: item.price,
+          cogs: item.cogs,
+          qty: item.qty,
+          subtotal: itemSubtotal,
+          created_at: now,
+          updated_at: now,
+          deleted_at: null,
+        });
+      });
+
+      const movementId = Crypto.randomUUID();
+      await database.get("stock_movements").create((sm: any) => {
+        Object.assign(sm._raw, {
+          id: movementId,
+          product_id: item.productId,
+          type: "sale",
+          qty: -item.qty,
+          ref_type: "transaction",
+          ref_id: id,
+          note: null,
+          created_at: now,
+          updated_at: now,
+          deleted_at: null,
+        });
+      });
+
+      const product = await database.get("products").find(item.productId);
+      await product.update((p: any) => {
+        p.stock = p.stock - item.qty;
+      });
+
+      await enqueueMutation("products", item.productId, "upsert", {
+        stock: (product as any).stock - item.qty,
+        updated_at: now,
+      });
+    }
+  });
+
+  await enqueueMutation("transactions", id, "upsert", transactionPayload);
+  return id;
+}
+
+export async function getTransactionsByShift(shiftId: string) {
+  const { Q } = await import("@nozbe/watermelondb");
+  return database
+    .get("transactions")
+    .query(Q.where("shift_id", Q.eq(shiftId)))
+    .fetch();
+}
+
+export async function getTransactionsByUser(userId: string) {
+  const { Q } = await import("@nozbe/watermelondb");
+  return database
+    .get("transactions")
+    .query(Q.where("user_id", Q.eq(userId)))
+    .fetch();
+}
+
+export async function getTransactionItems(transactionId: string) {
+  const { Q } = await import("@nozbe/watermelondb");
+  return database
+    .get("transaction_items")
+    .query(Q.where("transaction_id", Q.eq(transactionId)))
+    .fetch();
+}
