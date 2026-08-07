@@ -1,23 +1,38 @@
-import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Clock, TrendingUp, TrendingDown, DollarSign } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
-
-const SHIFTS = [
-  { id: "1", date: "12 Mei 2026", start: "08:00", end: "16:00", duration: "8j 0m", revenue: 2450000, expenses: 150000 },
-  { id: "2", date: "11 Mei 2026", start: "08:00", end: "15:30", duration: "7j 30m", revenue: 1980000, expenses: 120000 },
-  { id: "3", date: "10 Mei 2026", start: "09:00", end: "17:00", duration: "8j 0m", revenue: 3100000, expenses: 200000 },
-  { id: "4", date: "9 Mei 2026", start: "08:00", end: "16:30", duration: "8j 30m", revenue: 2750000, expenses: 180000 },
-  { id: "5", date: "8 Mei 2026", start: "08:00", end: "15:00", duration: "7j 0m", revenue: 1650000, expenses: 100000 },
-];
+import { useAuth } from "@/hooks/useAuth";
+import { getShiftsByUser } from "@/services/repositories/shiftRepository";
 
 const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
 export default function HistoryScreen() {
-  const totalRevenue = SHIFTS.reduce((s, i) => s + i.revenue, 0);
-  const totalExpenses = SHIFTS.reduce((s, i) => s + i.expenses, 0);
+  const { user } = useAuth();
+  const [shifts, setShifts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.id) {
+      getShiftsByUser(user.id).then((data) => {
+        setShifts(data || []);
+        setLoading(false);
+      });
+    }
+  }, [user?.id]);
+
+  const totalRevenue = shifts.reduce((s: number, i: any) => s + (i.sales_total || 0), 0);
+  const totalExpenses = shifts.reduce((s: number, i: any) => s + (i.expense_total || 0), 0);
   const totalProfit = totalRevenue - totalExpenses;
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color={Colors.primary.DEFAULT} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -58,34 +73,59 @@ export default function HistoryScreen() {
         {/* Shift List */}
         <View className="px-6">
           <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">Daftar Shift</Text>
-          {SHIFTS.map((shift) => (
+          {shifts.length === 0 ? (
+            <View className="items-center py-8">
+              <Text className="text-base font-sans-medium text-gray-400">Belum ada riwayat shift</Text>
+            </View>
+          ) : (
+            shifts.map((shift: any) => (
             <View key={shift.id} className="bg-muted rounded-lg p-4 mb-3">
               <View className="flex-row items-center justify-between mb-2">
-                <Text className="text-base font-sans-bold text-foreground">{shift.date}</Text>
+                <Text className="text-base font-sans-bold text-foreground">
+                  {new Date(shift.clock_in_at).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </Text>
                 <View className="flex-row items-center bg-white rounded-md px-3 py-1">
                   <Clock size={14} color={Colors.gray[500]} strokeWidth={2} />
-                  <Text className="text-xs font-sans-semibold text-gray-600 ml-1">{shift.duration}</Text>
+                  <Text className="text-xs font-sans-semibold text-gray-600 ml-1">
+                    {shift.status === "closed" ? "Selesai" : "Berjalan"}
+                  </Text>
                 </View>
               </View>
               <Text className="text-xs font-sans text-gray-500 mb-3">
-                {shift.start} — {shift.end}
+                {new Date(shift.clock_in_at).toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}{" "}
+                —{" "}
+                {shift.clock_out_at
+                  ? new Date(shift.clock_out_at).toLocaleTimeString("id-ID", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "sekarang"}
               </Text>
               <View className="flex-row gap-4">
                 <View className="flex-1">
                   <Text className="text-xs font-sans-medium text-gray-400 uppercase">Pendapatan</Text>
-                  <Text className="text-sm font-sans-bold text-secondary">{fmt(shift.revenue)}</Text>
+                  <Text className="text-sm font-sans-bold text-secondary">{fmt(shift.sales_total || 0)}</Text>
                 </View>
                 <View className="flex-1">
                   <Text className="text-xs font-sans-medium text-gray-400 uppercase">Pengeluaran</Text>
-                  <Text className="text-sm font-sans-bold text-accent">{fmt(shift.expenses)}</Text>
+                  <Text className="text-sm font-sans-bold text-accent">{fmt(shift.expense_total || 0)}</Text>
                 </View>
                 <View className="flex-1">
                   <Text className="text-xs font-sans-medium text-gray-400 uppercase">Laba</Text>
-                  <Text className="text-sm font-sans-bold text-primary">{fmt(shift.revenue - shift.expenses)}</Text>
+                  <Text className="text-sm font-sans-bold text-primary">
+                    {fmt((shift.sales_total || 0) - (shift.expense_total || 0))}
+                  </Text>
                 </View>
               </View>
             </View>
-          ))}
+          )))}
         </View>
       </ScrollView>
     </SafeAreaView>

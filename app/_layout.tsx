@@ -13,6 +13,8 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import "../global.css";
+import { database } from "@/db";
+import { startAutoSync, stopAutoSync } from "@/services/sync";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -20,7 +22,6 @@ export const unstable_settings = {
   initialRouteName: "index",
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -38,9 +39,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
+      startAutoSync();
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  useEffect(() => {
+    return () => stopAutoSync();
+  }, []);
 
   if (!loaded) {
     return null;

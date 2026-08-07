@@ -1,95 +1,242 @@
-import React, { useState, useMemo } from "react";
-import { View, Text, Pressable, TextInput } from "react-native";
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  TextInput,
+  ScrollView,
+  Modal,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FlashList } from "@shopify/flash-list";
-import { Search, Plus, Package, TrendingUp, DollarSign } from "lucide-react-native";
+import {
+  Search,
+  Plus,
+  Package,
+  TrendingUp,
+  DollarSign,
+  X,
+  Trash2,
+} from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
-
-const PRODUCTS = [
-  { id: "1", name: "Nasi Goreng", price: 15000, cogs: 8000, stock: 50, category: "Makanan", sold: 132 },
-  { id: "2", name: "Mie Ayam", price: 12000, cogs: 6500, stock: 8, category: "Makanan", sold: 89 },
-  { id: "3", name: "Es Teh Manis", price: 5000, cogs: 2000, stock: 100, category: "Minuman", sold: 87 },
-  { id: "4", name: "Kopi Susu", price: 10000, cogs: 4500, stock: 80, category: "Minuman", sold: 98 },
-  { id: "5", name: "Ayam Geprek", price: 18000, cogs: 10000, stock: 5, category: "Makanan", sold: 145 },
-  { id: "6", name: "Jus Jeruk", price: 8000, cogs: 3500, stock: 60, category: "Minuman", sold: 56 },
-  { id: "7", name: "Kerupuk", price: 3000, cogs: 1200, stock: 200, category: "Snack", sold: 45 },
-  { id: "8", name: "Gorengan", price: 2000, cogs: 800, stock: 3, category: "Snack", sold: 78 },
-  { id: "9", name: "Air Mineral", price: 4000, cogs: 1500, stock: 300, category: "Minuman", sold: 67 },
-  { id: "10", name: "Soto Ayam", price: 13000, cogs: 7000, stock: 40, category: "Makanan", sold: 54 },
-];
-
-const CATEGORIES = ["Semua", "Makanan", "Minuman", "Snack"];
+import {
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  searchProducts,
+} from "@/services/repositories/productRepository";
+import {
+  createCategory,
+  getAllCategories,
+} from "@/services/repositories/categoryRepository";
 
 const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
+
+type ProductForm = {
+  name: string;
+  sku: string;
+  price: string;
+  cogs: string;
+  stock: string;
+  categoryId: string;
+};
+
+const emptyForm: ProductForm = {
+  name: "",
+  sku: "",
+  price: "",
+  cogs: "",
+  stock: "",
+  categoryId: "",
+};
 
 export default function ProductsScreen() {
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("Semua");
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<ProductForm>({ ...emptyForm });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const loadProducts = async () => {
+    const data = await searchProducts("");
+    setProducts(data || []);
+  };
+
+  const loadCategories = async () => {
+    const data = await getAllCategories();
+    setCategories(data || []);
+  };
+
+  useEffect(() => {
+    loadProducts();
+    loadCategories();
+  }, []);
 
   const filtered = useMemo(() => {
-    return PRODUCTS.filter((p) => {
-      const s = p.name.toLowerCase().includes(search.toLowerCase());
-      const c = activeCat === "Semua" || p.category === activeCat;
-      return s && c;
-    });
-  }, [search, activeCat]);
+    let list = products;
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (p: any) =>
+          (p.name || "").toLowerCase().includes(q) ||
+          (p.sku || "").toLowerCase().includes(q)
+      );
+    }
+    if (activeCat !== "Semua") {
+      list = list.filter((p: any) => p.category_id === activeCat);
+    }
+    return list;
+  }, [search, activeCat, products]);
 
-  const totalProducts = PRODUCTS.length;
-  const lowStockCount = PRODUCTS.filter((p) => p.stock <= 10).length;
-  const totalValue = PRODUCTS.reduce((s, p) => s + p.price * p.stock, 0);
+  const totalProducts = products.length;
+  const lowStockCount = products.filter((p: any) => (p.stock || 0) <= 10).length;
+  const totalValue = products.reduce(
+    (s: number, p: any) => s + (p.price || 0) * (p.stock || 0),
+    0
+  );
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm({ ...emptyForm });
+    setShowModal(true);
+  };
+
+  const openEdit = (item: any) => {
+    setEditingId(item.id);
+    setForm({
+      name: item.name || "",
+      sku: item.sku || "",
+      price: String(item.price || 0),
+      cogs: String(item.cogs || 0),
+      stock: String(item.stock || 0),
+      categoryId: item.category_id || "",
+    });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim()) {
+      Alert.alert("Error", "Nama produk wajib diisi");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const input = {
+        sku: form.sku.trim() || form.name.trim().slice(0, 3).toUpperCase(),
+        name: form.name.trim(),
+        price: Number(form.price) || 0,
+        cogs: Number(form.cogs) || 0,
+        categoryId: form.categoryId || "uncategorized",
+      };
+      if (editingId) {
+        await updateProduct(editingId, input);
+      } else {
+        await createProduct(input);
+      }
+      setShowModal(false);
+      await loadProducts();
+    } catch (err: any) {
+      Alert.alert("Gagal", err.message || "Gagal menyimpan produk");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = (item: any) => {
+    Alert.alert("Hapus Produk", `Hapus "${item.name}"?`, [
+      { text: "Batal", style: "cancel" },
+      {
+        text: "Hapus",
+        style: "destructive",
+        onPress: async () => {
+          await deleteProduct(item.id);
+          await loadProducts();
+        },
+      },
+    ]);
+  };
+
+  const catTabs = [
+    "Semua",
+    ...categories.map((c: any) => c.id),
+  ];
+  const catNames: Record<string, string> = { Semua: "Semua" };
+  categories.forEach((c: any) => {
+    catNames[c.id] = c.name;
+  });
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
       <View className="px-6 pt-6 pb-2 flex-row items-end justify-between">
         <View>
           <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
             Inventori
           </Text>
-          <Text className="text-2xl font-sans-extrabold text-foreground mt-1" style={{ letterSpacing: -0.5 }}>
+          <Text
+            className="text-2xl font-sans-extrabold text-foreground mt-1"
+            style={{ letterSpacing: -0.5 }}
+          >
             Produk
           </Text>
         </View>
-        <Pressable className="bg-primary rounded-md px-4 py-3 flex-row items-center">
+        <Pressable
+          className="bg-primary rounded-md px-4 py-3 flex-row items-center"
+          onPress={openCreate}
+        >
           <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
           <Text className="text-sm font-sans-bold text-white ml-2">Tambah</Text>
         </Pressable>
       </View>
 
-      {/* Summary Cards */}
       <View className="px-6 py-4 flex-row gap-3">
         <View className="flex-1 bg-primary-50 rounded-lg p-4">
           <View className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center mb-2">
             <Package size={18} color={Colors.primary.DEFAULT} strokeWidth={2.5} />
           </View>
-          <Text className="text-xl font-sans-extrabold text-foreground">{totalProducts}</Text>
-          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">Produk</Text>
+          <Text className="text-xl font-sans-extrabold text-foreground">
+            {totalProducts}
+          </Text>
+          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
+            Produk
+          </Text>
         </View>
         <View className="flex-1 bg-accent-50 rounded-lg p-4">
           <View className="w-10 h-10 rounded-full bg-accent-100 items-center justify-center mb-2">
             <TrendingUp size={18} color={Colors.accent.DEFAULT} strokeWidth={2.5} />
           </View>
-          <Text className="text-xl font-sans-extrabold text-red-500">{lowStockCount}</Text>
-          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">Stok Rendah</Text>
+          <Text className="text-xl font-sans-extrabold text-red-500">
+            {lowStockCount}
+          </Text>
+          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
+            Stok Rendah
+          </Text>
         </View>
         <View className="flex-1 bg-secondary-50 rounded-lg p-4">
           <View className="w-10 h-10 rounded-full bg-secondary-100 items-center justify-center mb-2">
             <DollarSign size={18} color={Colors.secondary.DEFAULT} strokeWidth={2.5} />
           </View>
-          <Text className="text-sm font-sans-extrabold text-foreground" numberOfLines={1}>
+          <Text
+            className="text-sm font-sans-extrabold text-foreground"
+            numberOfLines={1}
+          >
             {(totalValue / 1000000).toFixed(1)}M
           </Text>
-          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">Nilai Stok</Text>
+          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
+            Nilai Stok
+          </Text>
         </View>
       </View>
 
-      {/* Search */}
       <View className="px-6 pb-2">
         <View className="flex-row items-center bg-muted rounded-md px-4">
           <Search size={18} color={Colors.gray[400]} strokeWidth={2} />
           <TextInput
             className="flex-1 h-12 ml-3 text-base text-foreground font-sans"
-            placeholder="Cari produk..."
+            placeholder="Cari produk atau SKU..."
             placeholderTextColor={Colors.gray[400]}
             value={search}
             onChangeText={setSearch}
@@ -97,74 +244,297 @@ export default function ProductsScreen() {
         </View>
       </View>
 
-      {/* Category tabs */}
-      <View className="px-6 pb-3 flex-row gap-2">
-        {CATEGORIES.map((cat) => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="px-6 pb-3"
+        contentContainerStyle={{ gap: 8 }}
+      >
+        {catTabs.map((cat) => (
           <Pressable
             key={cat}
-            className={`px-4 py-2 rounded-md ${activeCat === cat ? "bg-primary" : "bg-muted"}`}
+            className={`px-4 py-2 rounded-md ${
+              activeCat === cat ? "bg-primary" : "bg-muted"
+            }`}
             onPress={() => setActiveCat(cat)}
           >
-            <Text className={`text-sm font-sans-semibold ${activeCat === cat ? "text-white" : "text-gray-600"}`}>
-              {cat}
+            <Text
+              className={`text-sm font-sans-semibold ${
+                activeCat === cat ? "text-white" : "text-gray-600"
+              }`}
+            >
+              {catNames[cat] || cat}
             </Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
 
-      {/* Product List */}
-      <FlashList
-        data={filtered}
-        estimatedItemSize={88}
-        contentContainerStyle={{ paddingHorizontal: 24 }}
-        renderItem={({ item }) => {
-          const isLow = item.stock <= 10;
-          const margin = item.price - item.cogs;
-          const marginPct = Math.round((margin / item.price) * 100);
-          return (
-            <View className="flex-row items-center py-4 border-b-2 border-muted">
-              {/* Product Image Placeholder */}
-              <View className={`w-14 h-14 rounded-lg items-center justify-center ${isLow ? "bg-red-100" : "bg-muted"}`}>
-                <Text className="text-xl">🍽️</Text>
-              </View>
+      {products.length === 0 ? (
+        <View className="flex-1 items-center justify-center py-12">
+          <Package size={40} color={Colors.gray[300]} strokeWidth={1.5} />
+          <Text className="text-base font-sans-medium text-gray-400 mt-3">
+            Belum ada produk
+          </Text>
+          <Text className="text-sm font-sans text-gray-400 mt-1">
+            Tambahkan produk via tombol Tambah
+          </Text>
+        </View>
+      ) : (
+        <FlashList
+          data={filtered}
+          estimatedItemSize={88}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
+          renderItem={({ item }: { item: any }) => {
+            const isLow = (item.stock || 0) <= 10;
+            const margin = (item.price || 0) - (item.cogs || 0);
+            const marginPct = item.price
+              ? Math.round((margin / item.price) * 100)
+              : 0;
+            return (
+              <View className="flex-row items-center py-4 border-b-2 border-muted">
+                <Pressable className="flex-row flex-1 items-center" onPress={() => openEdit(item)}>
+                  <View
+                    className={`w-14 h-14 rounded-lg items-center justify-center ${
+                      isLow ? "bg-red-100" : "bg-muted"
+                    }`}
+                  >
+                    <Text className="text-xl">📦</Text>
+                  </View>
 
-              {/* Info */}
-              <View className="ml-4 flex-1">
-                <View className="flex-row items-center gap-2">
-                  <Text className="text-base font-sans-bold text-foreground">{item.name}</Text>
-                  {isLow && (
-                    <View className="bg-red-100 px-2 py-0.5 rounded">
-                      <Text className="text-xs font-sans-bold text-red-500">Low</Text>
+                  <View className="ml-4 flex-1">
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-base font-sans-bold text-foreground">
+                        {item.name}
+                      </Text>
+                      {isLow && (
+                        <View className="bg-red-100 px-2 py-0.5 rounded">
+                          <Text className="text-xs font-sans-bold text-red-500">Low</Text>
+                        </View>
+                      )}
                     </View>
-                  )}
+                    <Text className="text-xs font-sans text-gray-500 mt-0.5">
+                      SKU: {item.sku || "-"}
+                    </Text>
+                    <View className="flex-row items-center mt-1 gap-3">
+                      <Text className="text-xs font-sans-medium text-primary">
+                        {fmt(item.price || 0)}
+                      </Text>
+                      <Text className="text-xs font-sans text-gray-400">
+                        COGS: {fmt(item.cogs || 0)}
+                      </Text>
+                      {marginPct > 0 && (
+                        <Text className="text-xs font-sans-semibold text-secondary">
+                          +{marginPct}%
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </Pressable>
+
+                <Pressable
+                  className="ml-2 w-10 h-10 items-center justify-center"
+                  onPress={() => handleDelete(item)}
+                >
+                  <Trash2 size={18} color={Colors.gray[400]} strokeWidth={2} />
+                </Pressable>
+
+                <View className="items-end ml-2">
+                  <Text
+                    className={`text-lg font-sans-extrabold ${
+                      isLow ? "text-red-500" : "text-foreground"
+                    }`}
+                  >
+                    {item.stock || 0}
+                  </Text>
+                  <Text className="text-xs font-sans text-gray-400">unit</Text>
                 </View>
-                <Text className="text-xs font-sans text-gray-500 mt-0.5">
-                  {item.category} · Terjual {item.sold}
+              </View>
+            );
+          }}
+        />
+      )}
+
+      {/* Modal Form */}
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <SafeAreaView className="flex-1 bg-white">
+          <View className="flex-row items-center justify-between px-6 pt-4 pb-2 border-b-2 border-muted">
+            <Text className="text-lg font-sans-bold text-foreground">
+              {editingId ? "Edit Produk" : "Tambah Produk"}
+            </Text>
+            <Pressable
+              className="w-10 h-10 items-center justify-center"
+              onPress={() => setShowModal(false)}
+            >
+              <X size={24} color={Colors.gray[500]} strokeWidth={2} />
+            </Pressable>
+          </View>
+
+          <ScrollView className="flex-1 px-6 pt-6" keyboardShouldPersistTaps="handled">
+            <View className="gap-4">
+              <Field
+                label="Nama Produk"
+                value={form.name}
+                onChangeText={(v) => setForm({ ...form, name: v })}
+                placeholder="Nasi Goreng"
+              />
+              <Field
+                label="SKU"
+                value={form.sku}
+                onChangeText={(v) => setForm({ ...form, sku: v })}
+                placeholder="NSGR-001"
+              />
+              <Field
+                label="Harga Jual (Rp)"
+                value={form.price}
+                onChangeText={(v) => setForm({ ...form, price: v })}
+                placeholder="15000"
+                keyboardType="numeric"
+              />
+              <Field
+                label="Harga Pokok / COGS (Rp)"
+                value={form.cogs}
+                onChangeText={(v) => setForm({ ...form, cogs: v })}
+                placeholder="8000"
+                keyboardType="numeric"
+              />
+
+              <View>
+                <Text className="text-sm font-sans-semibold text-gray-500 mb-2">
+                  Kategori
                 </Text>
-                <View className="flex-row items-center mt-1 gap-3">
-                  <Text className="text-xs font-sans-medium text-primary">
-                    {fmt(item.price)}
-                  </Text>
-                  <Text className="text-xs font-sans text-gray-400">
-                    COGS: {fmt(item.cogs)}
-                  </Text>
-                  <Text className="text-xs font-sans-semibold text-secondary">
-                    +{marginPct}%
-                  </Text>
-                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 8 }}
+                >
+                  {categories.map((c: any) => (
+                    <Pressable
+                      key={c.id}
+                      className={`px-4 py-2 rounded-md ${
+                        form.categoryId === c.id ? "bg-primary" : "bg-muted"
+                      }`}
+                      onPress={() =>
+                        setForm({ ...form, categoryId: c.id })
+                      }
+                    >
+                      <Text
+                        className={`text-sm font-sans-semibold ${
+                          form.categoryId === c.id
+                            ? "text-white"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {c.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                  {categories.length === 0 && (
+                    <Text className="text-sm text-gray-400">
+                      Belum ada kategori. Buat dulu di bawah.
+                    </Text>
+                  )}
+                </ScrollView>
               </View>
 
-              {/* Stock */}
-              <View className="items-end">
-                <Text className={`text-lg font-sans-extrabold ${isLow ? "text-red-500" : "text-foreground"}`}>
-                  {item.stock}
+              <Pressable
+                className={`h-14 rounded-md items-center justify-center mt-2 ${
+                  isSaving ? "bg-primary-600" : "bg-primary"
+                }`}
+                onPress={handleSave}
+                disabled={isSaving}
+              >
+                <Text className="text-lg font-sans-bold text-white">
+                  {isSaving ? "Menyimpan..." : editingId ? "Update" : "Simpan"}
                 </Text>
-                <Text className="text-xs font-sans text-gray-400">unit</Text>
-              </View>
+              </Pressable>
+
+              <View className="h-0.5 bg-muted my-4" />
+
+              <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
+                Tambah Kategori Baru
+              </Text>
+              <CategoryQuickAdd onCreated={() => loadCategories()} />
             </View>
-          );
-        }}
-      />
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder: string;
+  keyboardType?: "default" | "numeric";
+}) {
+  return (
+    <View>
+      <Text className="text-sm font-sans-semibold text-gray-500 mb-2">
+        {label}
+      </Text>
+      <TextInput
+        className="h-12 border-2 border-muted rounded-md px-4 text-base font-sans text-foreground"
+        placeholder={placeholder}
+        placeholderTextColor={Colors.gray[400]}
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType || "default"}
+      />
+    </View>
+  );
+}
+
+function CategoryQuickAdd({ onCreated }: { onCreated: () => void }) {
+  const [name, setName] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  const handleAdd = async () => {
+    if (!name.trim()) return;
+    setAdding(true);
+    try {
+      await createCategory({ name: name.trim() });
+      setName("");
+      onCreated();
+    } catch {
+      Alert.alert("Gagal", "Gagal membuat kategori");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <View className="flex-row gap-3">
+      <TextInput
+        className="flex-1 h-12 border-2 border-muted rounded-md px-4 text-base font-sans text-foreground"
+        placeholder="Nama kategori (contoh: Makanan)"
+        placeholderTextColor={Colors.gray[400]}
+        value={name}
+        onChangeText={setName}
+      />
+      <Pressable
+        className={`h-12 rounded-md items-center justify-center px-6 ${
+          adding ? "bg-primary-600" : "bg-primary"
+        }`}
+        onPress={handleAdd}
+        disabled={adding || !name.trim()}
+      >
+        <Text className="text-sm font-sans-bold text-white">
+          {adding ? "..." : "Tambah"}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
