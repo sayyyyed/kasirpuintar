@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ShoppingBag } from "lucide-react-native";
+import { Image } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -34,7 +34,6 @@ export default function LoginScreen() {
   const inputRef = useRef<RNTextInput>(null);
 
   const submittingRef = useRef(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleChangeText = (text: string) => {
     if (submittingRef.current) return;
@@ -43,26 +42,19 @@ export default function LoginScreen() {
     setDigits(parsed);
 
     const pin = parsed.filter((d) => d !== "").join("");
-    if (pin.length < 4) {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      return;
-    }
+    if (pin.length < 6) return;
 
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const firstEmpty = parsed.findIndex((d) => d === "");
+    const consecutive = firstEmpty === -1 || firstEmpty >= pin.length;
 
-    if (pin.length >= BOX_COUNT) {
+    if (consecutive) {
       submittingRef.current = true;
       submitPin(pin);
-    } else {
-      debounceRef.current = setTimeout(() => {
-        submittingRef.current = true;
-        submitPin(pin);
-      }, 600);
     }
   };
 
   const submitPin = async (pin: string) => {
-    if (pin.length < 4) return;
+    if (pin.length < 6) return;
     setErrorMsg("");
     setIsLoading(true);
     const { error } = await login(pin);
@@ -94,9 +86,12 @@ export default function LoginScreen() {
 
           {/* Logo */}
           <View className="items-center mb-10">
-            <View className="w-20 h-20 rounded-lg bg-primary items-center justify-center mb-6">
-              <ShoppingBag size={40} color="#FFFFFF" strokeWidth={2.5} />
-            </View>
+            <Image
+              source={require("@/assets/images/logowarung.png")}
+              style={{ width: 96, height: 96, borderRadius: 16 }}
+              resizeMode="contain"
+            />
+            <View style={{ height: 24 }} />
             <Text
               className="text-4xl text-foreground font-sans-extrabold"
               style={{ letterSpacing: -0.8 }}
@@ -153,16 +148,16 @@ export default function LoginScreen() {
           {/* Confirm Button */}
           <Pressable
             className={`h-14 rounded-md items-center justify-center transition-all duration-200 ${
-              rawPin.length >= 4 && !isLoading
+              rawPin.length >= 6 && !isLoading
                 ? "bg-primary active:bg-primary-600"
                 : "bg-gray-200"
             }`}
             onPress={() => submitPin(rawPin)}
-            disabled={rawPin.length < 4 || isLoading}
+            disabled={rawPin.length < 6 || isLoading}
           >
             <Text
               className={`text-lg font-sans-bold ${
-                rawPin.length >= 4 ? "text-white" : "text-gray-400"
+                rawPin.length >= 6 ? "text-white" : "text-gray-400"
               }`}
             >
               {isLoading ? "Memeriksa..." : "Masuk"}
