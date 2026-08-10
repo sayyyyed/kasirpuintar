@@ -4,8 +4,7 @@ import {
   Text,
   Pressable,
   ScrollView,
-  TextInput,
-  Modal,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -16,7 +15,7 @@ import {
   LogOut,
   ChevronRight,
   Play,
-  X,
+  Clock,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { Card } from "@/components/ui/Card";
@@ -25,7 +24,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useShift } from "@/hooks/useShift";
-import { verifyPin } from "@/services/auth";
+import { useEmployeeTab } from "./_layout";
 import { clockIn, clockOut } from "@/services/repositories/shiftRepository";
 import { getTransactionsByShift } from "@/services/repositories/transactionRepository";
 
@@ -33,13 +32,36 @@ const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
 export default function EmployeeDashboard() {
   const router = useRouter();
+  const { goTo } = useEmployeeTab();
   const { user, signOut } = useAuth();
   const { shift, formattedTime } = useShift(user?.id || "");
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [pinError, setPinError] = useState("");
   const [isClocking, setIsClocking] = useState(false);
   const [todayTxns, setTodayTxns] = useState<any[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedDate = useMemo(() => {
+    return currentTime.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }, [currentTime]);
+
+  const formattedClock = useMemo(() => {
+    return currentTime.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  }, [currentTime]);
 
   const loadTodayTxns = async () => {
     if (!shift?.id) return;
@@ -63,44 +85,43 @@ export default function EmployeeDashboard() {
   const handleClockIn = async () => {
     if (!user) return;
     setIsClocking(true);
-    const valid = await verifyPin(user.id, pinInput);
-    setIsClocking(false);
-    if (!valid) {
-      setPinError("PIN salah");
-      return;
+    try {
+      await clockIn({ userId: user.id, openingCash: 0 });
+    } catch (err: any) {
+      Alert.alert("Gagal", err.message || "Gagal memulai shift");
+    } finally {
+      setIsClocking(false);
     }
-    setPinInput("");
-    setPinError("");
-    setShowPinModal(false);
-
-    await clockIn({ userId: user.id, openingCash: 0 });
   };
 
-  const handleClockOut = async () => {
+  const handleClockOut = () => {
     if (!shift?.id) return;
-    setIsClocking(true);
-    const valid = await verifyPin(user?.id || "", pinInput);
-    setIsClocking(false);
-    if (!valid) {
-      setPinError("PIN salah");
-      return;
-    }
-    setPinInput("");
-    setPinError("");
-    setShowPinModal(false);
-
-    await clockOut(shift.id, 0);
+    Alert.alert(
+      "Akhiri Shift",
+      "Apakah Anda yakin akan mengakhiri shift?",
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Ya, Akhiri",
+          style: "destructive",
+          onPress: async () => {
+            setIsClocking(true);
+            try {
+              await clockOut(shift.id, 0);
+            } catch (err: any) {
+              Alert.alert("Gagal", err.message || "Gagal mengakhiri shift");
+            } finally {
+              setIsClocking(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleLogout = async () => {
     await signOut();
     router.replace("/(auth)/login");
-  };
-
-  const openClockIn = () => {
-    setPinInput("");
-    setPinError("");
-    setShowPinModal(true);
   };
 
   return (
@@ -127,6 +148,30 @@ export default function EmployeeDashboard() {
           </Pressable>
         </View>
 
+        {/* Live Clock Display */}
+        <View className="px-6 pb-2">
+          <View className="bg-muted rounded-lg p-5 flex-row items-center justify-between">
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 rounded-full bg-white items-center justify-center">
+                <Clock size={18} color={Colors.primary.DEFAULT} strokeWidth={2.5} />
+              </View>
+              <View className="ml-3">
+                <Text className="text-[10px] font-sans-bold text-gray-400 uppercase tracking-wider">
+                  Jam Kerja Lokal
+                </Text>
+                <Text className="text-sm font-sans-bold text-foreground mt-0.5">
+                  {formattedDate}
+                </Text>
+              </View>
+            </View>
+            <View className="bg-primary px-4 py-2 rounded-md">
+              <Text className="text-base font-sans-extrabold text-white tracking-wider">
+                {formattedClock}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {!shift ? (
           /* No active shift */
           <View className="px-6 mb-6">
@@ -136,14 +181,15 @@ export default function EmployeeDashboard() {
                 Belum ada shift aktif
               </Text>
               <Text className="text-sm font-sans text-gray-500 mt-1 text-center">
-                Masukkan PIN untuk memulai shift
+                Tekan tombol di bawah untuk memulai shift
               </Text>
               <Pressable
                 className="h-14 rounded-md bg-primary items-center justify-center mt-6 px-8"
-                onPress={openClockIn}
+                onPress={handleClockIn}
+                disabled={isClocking}
               >
                 <Text className="text-base font-sans-bold text-white">
-                  Mulai Shift
+                  {isClocking ? "Memulai..." : "Mulai Shift"}
                 </Text>
               </Pressable>
             </View>
@@ -171,8 +217,8 @@ export default function EmployeeDashboard() {
                 </Text>
                 <Text className="text-sm font-sans text-white opacity-60 mt-2">
                   Mulai pukul{" "}
-                  {shift?.clock_in_at
-                    ? new Date(shift.clock_in_at).toLocaleTimeString("id-ID", {
+                  {shift?.clockInAt
+                    ? shift.clockInAt.toLocaleTimeString("id-ID", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })
@@ -259,7 +305,7 @@ export default function EmployeeDashboard() {
               </Text>
               <Pressable
                 className="flex-row items-center bg-muted rounded-lg p-4"
-                onPress={() => router.push("/(employee)/pos")}
+                onPress={() => goTo(1)}
               >
                 <IconCircle color="primary" size="sm">
                   <ShoppingCart
@@ -284,7 +330,7 @@ export default function EmployeeDashboard() {
             <View className="px-6">
               <Pressable
                 className="h-14 rounded-md items-center justify-center border-4 border-red-500 flex-row"
-                onPress={openClockIn}
+                onPress={handleClockOut}
               >
                 <LogOut size={20} color="#EF4444" strokeWidth={2.5} />
                 <Text className="ml-2 text-base font-sans-bold text-red-500">
@@ -295,56 +341,6 @@ export default function EmployeeDashboard() {
           </>
         )}
       </ScrollView>
-
-      {/* PIN Modal */}
-      <Modal
-        visible={showPinModal}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setShowPinModal(false)}
-      >
-        <View className="flex-1 bg-black/50 items-center justify-center px-8">
-          <View className="bg-white rounded-lg p-6 w-full">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-lg font-sans-bold text-foreground">
-              Verifikasi PIN
-            </Text>
-            <Pressable
-              className="w-8 h-8 items-center justify-center"
-              onPress={() => setShowPinModal(false)}
-            >
-              <X size={20} color={Colors.gray[500]} strokeWidth={2} />
-            </Pressable>
-          </View>
-          <TextInput
-            className="h-14 border-2 border-muted rounded-md px-4 text-2xl font-sans-bold text-center text-foreground tracking-widest"
-            placeholder="****"
-            keyboardType="numeric"
-            maxLength={6}
-            secureTextEntry
-            value={pinInput}
-            onChangeText={setPinInput}
-            autoFocus
-          />
-          {pinError !== "" && (
-            <Text className="text-sm text-red-500 font-sans-medium text-center mt-2">
-              {pinError}
-            </Text>
-          )}
-          <Pressable
-            className={`h-12 rounded-md items-center justify-center mt-4 ${
-              isClocking ? "bg-gray-300" : "bg-primary"
-            }`}
-            onPress={shift ? handleClockOut : handleClockIn}
-            disabled={isClocking || pinInput.length === 0}
-          >
-            <Text className="text-base font-sans-bold text-white">
-              {isClocking ? "..." : shift ? "Akhiri Shift" : "Mulai Shift"}
-            </Text>
-          </Pressable>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }

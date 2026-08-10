@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, createContext, useContext } from "react";
 import { View, Text, Pressable, Animated } from "react-native";
 import PagerView from "react-native-pager-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,6 +13,14 @@ import Dashboard from "./dashboard";
 import POSScreen from "./pos";
 import Inventory from "./inventory";
 import History from "./history";
+
+export const EmployeeTabContext = createContext<{
+  goTo: (index: number) => void;
+}>({ goTo: () => {} });
+
+export function useEmployeeTab() {
+  return useContext(EmployeeTabContext);
+}
 
 const TABS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -41,18 +49,19 @@ export default function EmployeeLayout() {
   });
 
   return (
-    <View className="flex-1 bg-white">
-      <PagerView
-        ref={pagerRef}
-        style={{ flex: 1 }}
-        initialPage={0}
-        onPageScroll={(e) => {
-          const offset = e.nativeEvent.offset;
-          const pos = e.nativeEvent.position;
-          scrollX.setValue(pos + offset);
-        }}
-        onPageSelected={(e) => setPage(e.nativeEvent.position)}
-      >
+    <EmployeeTabContext.Provider value={{ goTo }}>
+      <View className="flex-1 bg-white">
+        <PagerView
+          ref={pagerRef}
+          style={{ flex: 1 }}
+          initialPage={0}
+          onPageScroll={(e) => {
+            const offset = e.nativeEvent.offset;
+            const pos = e.nativeEvent.position;
+            scrollX.setValue(pos + offset);
+          }}
+          onPageSelected={(e) => setPage(e.nativeEvent.position)}
+        >
         <View key="dashboard" className="flex-1">
           <Dashboard />
         </View>
@@ -70,12 +79,10 @@ export default function EmployeeLayout() {
       <View
         className="bg-white border-t-2 border-muted"
         style={{
-          paddingBottom: 24 + insets.bottom,
-          paddingTop: 10,
-          height: 76 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 12),
         }}
       >
-        <View className="flex-row relative">
+        <View className="flex-row relative pt-2 pb-1">
           <Animated.View
             className="absolute top-0 h-1 bg-primary rounded-full"
             style={{
@@ -90,7 +97,7 @@ export default function EmployeeLayout() {
             return (
               <Pressable
                 key={tab.key}
-                className="flex-1 items-center justify-center"
+                className="flex-1 items-center justify-center py-2"
                 onPress={() => goTo(i)}
               >
                 <Icon
@@ -113,6 +120,7 @@ export default function EmployeeLayout() {
           })}
         </View>
       </View>
-    </View>
+      </View>
+    </EmployeeTabContext.Provider>
   );
 }
