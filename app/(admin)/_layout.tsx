@@ -70,12 +70,10 @@ export default function AdminLayout() {
       <View
         className="bg-white border-t-2 border-muted"
         style={{
-          paddingBottom: 24 + insets.bottom,
-          paddingTop: 10,
-          height: 76 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 12),
         }}
       >
-        <View className="flex-row relative">
+        <View className="flex-row relative pt-2 pb-1">
           <Animated.View
             className="absolute top-0 h-1 bg-primary rounded-full"
             style={{
@@ -90,7 +88,7 @@ export default function AdminLayout() {
             return (
               <Pressable
                 key={tab.key}
-                className="flex-1 items-center justify-center"
+                className="flex-1 items-center justify-center py-2"
                 onPress={() => goTo(i)}
               >
                 <Icon

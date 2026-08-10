@@ -5,7 +5,6 @@ import {
   Pressable,
   TextInput,
   ScrollView,
-  Modal,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,9 +13,7 @@ import {
   Search,
   Plus,
   Package,
-  TrendingUp,
-  DollarSign,
-  X,
+  LayoutGrid,
   Trash2,
 } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
@@ -30,6 +27,7 @@ import {
   createCategory,
   getAllCategories,
 } from "@/services/repositories/categoryRepository";
+import SheetModal from "@/components/ui/SheetModal";
 
 const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
@@ -93,11 +91,7 @@ export default function ProductsScreen() {
   }, [search, activeCat, products]);
 
   const totalProducts = products.length;
-  const lowStockCount = products.filter((p: any) => (p.stock || 0) <= 10).length;
-  const totalValue = products.reduce(
-    (s: number, p: any) => s + (p.price || 0) * (p.stock || 0),
-    0
-  );
+  const totalCategories = categories.length;
 
   const openCreate = () => {
     setEditingId(null);
@@ -112,7 +106,7 @@ export default function ProductsScreen() {
       sku: item.sku || "",
       price: String(item.price || 0),
       cogs: String(item.cogs || 0),
-      stock: String(item.stock || 0),
+      stock: "",
       categoryId: item.category_id || "",
     });
     setShowModal(true);
@@ -174,7 +168,7 @@ export default function ProductsScreen() {
       <View className="px-6 pt-6 pb-2 flex-row items-end justify-between">
         <View>
           <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
-            Inventori
+            Menu
           </Text>
           <Text
             className="text-2xl font-sans-extrabold text-foreground mt-1"
@@ -201,32 +195,18 @@ export default function ProductsScreen() {
             {totalProducts}
           </Text>
           <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
-            Produk
-          </Text>
-        </View>
-        <View className="flex-1 bg-accent-50 rounded-lg p-4">
-          <View className="w-10 h-10 rounded-full bg-accent-100 items-center justify-center mb-2">
-            <TrendingUp size={18} color={Colors.accent.DEFAULT} strokeWidth={2.5} />
-          </View>
-          <Text className="text-xl font-sans-extrabold text-red-500">
-            {lowStockCount}
-          </Text>
-          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
-            Stok Rendah
+            Menu
           </Text>
         </View>
         <View className="flex-1 bg-secondary-50 rounded-lg p-4">
           <View className="w-10 h-10 rounded-full bg-secondary-100 items-center justify-center mb-2">
-            <DollarSign size={18} color={Colors.secondary.DEFAULT} strokeWidth={2.5} />
+            <LayoutGrid size={18} color={Colors.secondary.DEFAULT} strokeWidth={2.5} />
           </View>
-          <Text
-            className="text-sm font-sans-extrabold text-foreground"
-            numberOfLines={1}
-          >
-            {(totalValue / 1000000).toFixed(1)}M
+          <Text className="text-xl font-sans-extrabold text-foreground">
+            {totalCategories}
           </Text>
           <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
-            Nilai Stok
+            Kategori
           </Text>
         </View>
       </View>
@@ -244,30 +224,35 @@ export default function ProductsScreen() {
         </View>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        className="px-6 pb-3"
-        contentContainerStyle={{ gap: 8 }}
-      >
-        {catTabs.map((cat) => (
-          <Pressable
-            key={cat}
-            className={`px-4 py-2 rounded-md ${
-              activeCat === cat ? "bg-primary" : "bg-muted"
-            }`}
-            onPress={() => setActiveCat(cat)}
-          >
-            <Text
-              className={`text-sm font-sans-semibold ${
-                activeCat === cat ? "text-white" : "text-gray-600"
-              }`}
-            >
-              {catNames[cat] || cat}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <View className="px-6 pb-3">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingRight: 8 }}
+        >
+          {catTabs.map((cat) => {
+            const isActive = activeCat === cat;
+            return (
+              <Pressable
+                key={cat}
+                className={`px-5 py-2.5 rounded-md ${
+                  isActive ? "bg-primary" : "bg-muted"
+                }`}
+                style={{ minWidth: 64 }}
+                onPress={() => setActiveCat(cat)}
+              >
+                <Text
+                  className={`text-sm font-sans-semibold text-center ${
+                    isActive ? "text-white" : "text-gray-600"
+                  }`}
+                >
+                  {catNames[cat] || cat}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {products.length === 0 ? (
         <View className="flex-1 items-center justify-center py-12">
@@ -282,10 +267,8 @@ export default function ProductsScreen() {
       ) : (
         <FlashList
           data={filtered}
-          estimatedItemSize={88}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
           renderItem={({ item }: { item: any }) => {
-            const isLow = (item.stock || 0) <= 10;
             const margin = (item.price || 0) - (item.cogs || 0);
             const marginPct = item.price
               ? Math.round((margin / item.price) * 100)
@@ -294,24 +277,15 @@ export default function ProductsScreen() {
               <View className="flex-row items-center py-4 border-b-2 border-muted">
                 <Pressable className="flex-row flex-1 items-center" onPress={() => openEdit(item)}>
                   <View
-                    className={`w-14 h-14 rounded-lg items-center justify-center ${
-                      isLow ? "bg-red-100" : "bg-muted"
-                    }`}
+                    className="w-14 h-14 rounded-lg items-center justify-center bg-muted"
                   >
                     <Text className="text-xl">📦</Text>
                   </View>
 
                   <View className="ml-4 flex-1">
-                    <View className="flex-row items-center gap-2">
-                      <Text className="text-base font-sans-bold text-foreground">
-                        {item.name}
-                      </Text>
-                      {isLow && (
-                        <View className="bg-red-100 px-2 py-0.5 rounded">
-                          <Text className="text-xs font-sans-bold text-red-500">Low</Text>
-                        </View>
-                      )}
-                    </View>
+                    <Text className="text-base font-sans-bold text-foreground">
+                      {item.name}
+                    </Text>
                     <Text className="text-xs font-sans text-gray-500 mt-0.5">
                       SKU: {item.sku || "-"}
                     </Text>
@@ -337,132 +311,106 @@ export default function ProductsScreen() {
                 >
                   <Trash2 size={18} color={Colors.gray[400]} strokeWidth={2} />
                 </Pressable>
-
-                <View className="items-end ml-2">
-                  <Text
-                    className={`text-lg font-sans-extrabold ${
-                      isLow ? "text-red-500" : "text-foreground"
-                    }`}
-                  >
-                    {item.stock || 0}
-                  </Text>
-                  <Text className="text-xs font-sans text-gray-400">unit</Text>
-                </View>
               </View>
             );
           }}
         />
       )}
 
-      {/* Modal Form */}
-      <Modal
+      {/* SheetModal Form */}
+      <SheetModal
         visible={showModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowModal(false)}
+        title={editingId ? "Edit Produk" : "Tambah Produk"}
+        onClose={() => setShowModal(false)}
       >
-        <SafeAreaView className="flex-1 bg-white">
-          <View className="flex-row items-center justify-between px-6 pt-4 pb-2 border-b-2 border-muted">
-            <Text className="text-lg font-sans-bold text-foreground">
-              {editingId ? "Edit Produk" : "Tambah Produk"}
-            </Text>
-            <Pressable
-              className="w-10 h-10 items-center justify-center"
-              onPress={() => setShowModal(false)}
-            >
-              <X size={24} color={Colors.gray[500]} strokeWidth={2} />
-            </Pressable>
-          </View>
+        <ScrollView keyboardShouldPersistTaps="handled">
+          <View className="gap-4">
+            <Field
+              label="Nama Produk"
+              value={form.name}
+              onChangeText={(v) => setForm({ ...form, name: v })}
+              placeholder="Nasi Goreng"
+            />
+            <Field
+              label="SKU"
+              value={form.sku}
+              onChangeText={(v) => setForm({ ...form, sku: v })}
+              placeholder="NSGR-001"
+            />
+            <Field
+              label="Harga Jual (Rp)"
+              value={form.price}
+              onChangeText={(v) => setForm({ ...form, price: v })}
+              placeholder="15000"
+              keyboardType="numeric"
+            />
+            <Field
+              label="Harga Pokok / COGS (Rp)"
+              value={form.cogs}
+              onChangeText={(v) => setForm({ ...form, cogs: v })}
+              placeholder="8000"
+              keyboardType="numeric"
+            />
 
-          <ScrollView className="flex-1 px-6 pt-6" keyboardShouldPersistTaps="handled">
-            <View className="gap-4">
-              <Field
-                label="Nama Produk"
-                value={form.name}
-                onChangeText={(v) => setForm({ ...form, name: v })}
-                placeholder="Nasi Goreng"
-              />
-              <Field
-                label="SKU"
-                value={form.sku}
-                onChangeText={(v) => setForm({ ...form, sku: v })}
-                placeholder="NSGR-001"
-              />
-              <Field
-                label="Harga Jual (Rp)"
-                value={form.price}
-                onChangeText={(v) => setForm({ ...form, price: v })}
-                placeholder="15000"
-                keyboardType="numeric"
-              />
-              <Field
-                label="Harga Pokok / COGS (Rp)"
-                value={form.cogs}
-                onChangeText={(v) => setForm({ ...form, cogs: v })}
-                placeholder="8000"
-                keyboardType="numeric"
-              />
-
-              <View>
-                <Text className="text-sm font-sans-semibold text-gray-500 mb-2">
-                  Kategori
-                </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 8 }}
-                >
-                  {categories.map((c: any) => (
-                    <Pressable
-                      key={c.id}
-                      className={`px-4 py-2 rounded-md ${
-                        form.categoryId === c.id ? "bg-primary" : "bg-muted"
-                      }`}
-                      onPress={() =>
-                        setForm({ ...form, categoryId: c.id })
-                      }
-                    >
-                      <Text
-                        className={`text-sm font-sans-semibold ${
-                          form.categoryId === c.id
-                            ? "text-white"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        {c.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                  {categories.length === 0 && (
-                    <Text className="text-sm text-gray-400">
-                      Belum ada kategori. Buat dulu di bawah.
-                    </Text>
-                  )}
-                </ScrollView>
-              </View>
-
-              <Pressable
-                className={`h-14 rounded-md items-center justify-center mt-2 ${
-                  isSaving ? "bg-primary-600" : "bg-primary"
-                }`}
-                onPress={handleSave}
-                disabled={isSaving}
-              >
-                <Text className="text-lg font-sans-bold text-white">
-                  {isSaving ? "Menyimpan..." : editingId ? "Update" : "Simpan"}
-                </Text>
-              </Pressable>
-
-              <View className="h-0.5 bg-muted my-4" />
-
-              <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
-                Tambah Kategori Baru
+            <View>
+              <Text className="text-sm font-sans-semibold text-gray-500 mb-2">
+                Kategori
               </Text>
-              <CategoryQuickAdd onCreated={() => loadCategories()} />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {categories.map((c: any) => (
+                  <Pressable
+                    key={c.id}
+                    className={`px-4 py-2 rounded-md ${
+                      form.categoryId === c.id ? "bg-primary" : "bg-muted"
+                    }`}
+                    onPress={() =>
+                      setForm({ ...form, categoryId: c.id })
+                    }
+                  >
+                    <Text
+                      className={`text-sm font-sans-semibold ${
+                        form.categoryId === c.id
+                          ? "text-white"
+                          : "text-gray-600"
+                      }`}
+                    >
+                      {c.name}
+                    </Text>
+                  </Pressable>
+                ))}
+                {categories.length === 0 && (
+                  <Text className="text-sm text-gray-400">
+                    Belum ada kategori. Buat dulu di bawah.
+                  </Text>
+                )}
+              </ScrollView>
             </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+
+            <Pressable
+              className={`h-14 rounded-md items-center justify-center mt-2 ${
+                isSaving ? "bg-primary-600" : "bg-primary"
+              }`}
+              onPress={handleSave}
+              disabled={isSaving}
+            >
+              <Text className="text-lg font-sans-bold text-white">
+                {isSaving ? "Menyimpan..." : editingId ? "Update" : "Simpan"}
+              </Text>
+            </Pressable>
+
+            <View className="h-0.5 bg-muted my-4" />
+
+            <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
+              Tambah Kategori Baru
+            </Text>
+            <CategoryQuickAdd onCreated={() => loadCategories()} />
+          </View>
+        </ScrollView>
+      </SheetModal>
     </SafeAreaView>
   );
 }
