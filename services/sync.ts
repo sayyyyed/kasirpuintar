@@ -4,6 +4,7 @@ import { AppState, AppStateStatus } from "react-native";
 import { Q } from "@nozbe/watermelondb";
 import { database } from "@/db";
 import { supabase } from "./supabase";
+import { ensureSession } from "./supabase";
 
 const WATERMARK_KEY = "sync_last_pulled_at";
 
@@ -16,22 +17,69 @@ const SYNC_TABLES = [
   "transaction_items",
   "stock_movements",
   "expenses",
+  "payroll_periods",
 ];
 
-const dateFields = new Set(["created_at", "updated_at", "deleted_at"]);
+const dateFields = new Set([
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "clock_in_at",
+  "clock_out_at",
+  "period_start",
+  "period_end",
+  "paid_at",
+]);
 
 let isSyncing = false;
 
+function convertDatesToISO(rec: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...rec };
+  for (const key of Object.keys(out)) {
+    if (dateFields.has(key) && out[key] !== null && out[key] !== undefined) {
+      const val = out[key];
+      if (typeof val === "number") {
+        out[key] = new Date(val).toISOString();
+      }
+    }
+  }
+  return out;
+}
+
+const MAX_ATTEMPTS = 10;
+
 export async function pushChanges() {
+  await ensureSession();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    console.warn("[sync] push dibatalkan: tidak ada sesi. Pastikan anonymous sign-in diaktifkan di Supabase.");
+    return;
+  }
+
   const outboxItems = await database
     .get("sync_outbox")
     .query()
     .fetch();
 
+  if (outboxItems.length === 0) return;
+
+  let failed = 0;
+
   for (const row of outboxItems) {
     const item = row as any;
+    const attempts = (item.attempts ?? 0) + 1;
+
+    if (attempts > MAX_ATTEMPTS) {
+      console.warn(`[sync] drop stale ${item.tableName}/${item.recordId} setelah ${MAX_ATTEMPTS}x gagal`);
+      await database.write(async () => {
+        await item.destroyPermanently();
+      });
+      continue;
+    }
+
     try {
-      const rec = JSON.parse(item.payload as string) as Record<string, unknown>;
+      const raw = JSON.parse(item.payload as string) as Record<string, unknown>;
+      const rec = convertDatesToISO(raw);
       const { error } = await supabase
         .from(item.tableName as string)
         .upsert(rec, { onConflict: "id" });
@@ -41,23 +89,35 @@ export async function pushChanges() {
           await item.destroyPermanently();
         });
       } else {
+        failed += 1;
+        console.warn(`[sync] push ${item.tableName}/${item.recordId} gagal:`, error.message);
         await database.write(async () => {
           await item.update((r: any) => {
-            r.attempts = r.attempts + 1;
+            r.attempts = attempts;
           });
         });
       }
-    } catch {
+    } catch (err) {
+      failed += 1;
+      console.warn(`[sync] push ${item.tableName}/${item.recordId} error:`, err);
       await database.write(async () => {
         await item.update((r: any) => {
-          r.attempts = r.attempts + 1;
+          r.attempts = attempts;
         });
       });
     }
   }
+
+  return failed;
 }
 
 export async function pullChanges() {
+  await ensureSession();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    console.warn("[sync] pull dibatalkan: tidak ada sesi. Pastikan anonymous sign-in diaktifkan di Supabase.");
+    return;
+  }
   const lastPulled =
     (await AsyncStorage.getItem(WATERMARK_KEY)) || new Date(0).toISOString();
   let newest = lastPulled;
@@ -70,7 +130,11 @@ export async function pullChanges() {
       .order("updated_at", { ascending: true })
       .limit(500);
 
-    if (error || !data?.length) continue;
+    if (error) {
+      console.warn(`[sync] pull ${tableName} gagal:`, error.message);
+      continue;
+    }
+    if (!data?.length) continue;
 
     const collection = database.get(tableName);
 
@@ -90,14 +154,14 @@ export async function pullChanges() {
         if (!local) {
           await collection.create((r: any) => {
             r._raw.id = row.id;
-            applyRowData(r, row);
+            applyRowData(r._raw, row);
           });
         } else {
           const serverTs = new Date(row.updated_at as string).getTime();
           const localTs = (local as any).updatedAt?.getTime?.() ?? 0;
           if (serverTs > localTs) {
             await local.update((r: any) => {
-              applyRowData(r, row);
+              applyRowData(r._raw, row);
             });
           }
         }
@@ -113,8 +177,9 @@ export async function pullChanges() {
 }
 
 export async function syncAll() {
-  await pushChanges();
+  const failed = await pushChanges();
   await pullChanges();
+  return failed ?? 0;
 }
 
 let netUnsub: (() => void) | null = null;
@@ -157,7 +222,7 @@ function applyRowData(
     if (dateFields.has(key)) {
       target[key] = value
         ? new Date(value as string).getTime()
-        : undefined;
+        : null;
     } else {
       target[key] = value;
     }

@@ -12,3 +12,31 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+let sessionPromise: Promise<void> | null = null;
+
+/**
+ * Memastikan ada sesi Supabase (owner login atau anonim) agar engine
+ * sinkronisasi bisa push/pull untuk semua role, termasuk kasir yang
+ * login lokal via PIN. Best-effort: tidak melempar error ke caller.
+ */
+export async function ensureSession(): Promise<void> {
+  if (!sessionPromise) {
+    sessionPromise = (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) return;
+      try {
+        await supabase.auth.signInAnonymously();
+      } catch {
+        // anon sign-in tidak diaktifkan — sync akan berjalan tanpa sesi
+      }
+    })();
+  }
+  try {
+    await sessionPromise;
+  } catch {
+    // abaikan — sync bersifat best-effort
+  } finally {
+    sessionPromise = null;
+  }
+}

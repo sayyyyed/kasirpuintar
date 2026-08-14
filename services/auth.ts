@@ -179,18 +179,20 @@ async function seedUserToLocalDB(profile: any) {
 export async function createEmployee(
   name: string,
   email: string,
-  pin: string
+  pin: string,
+  hourlyRate?: number
 ) {
   const hashedPin = await hashPin(pin);
   const id = Crypto.randomUUID();
   const now = Date.now();
 
-  const payload = {
+  const payload: Record<string, unknown> = {
     id,
     name: name.trim(),
     email: email.toLowerCase().trim(),
     role: "cashier",
     pin_hash: hashedPin,
+    hourly_rate: hourlyRate ?? null,
     active: true,
     created_at: now,
     updated_at: now,
@@ -218,10 +220,9 @@ export async function getEmployees() {
   const records = await database
     .get("users")
     .query(
-      Q.where("role", Q.eq("cashier")),
       Q.where("active", Q.eq(true)),
       Q.where("deleted_at", Q.eq(null))
     )
     .fetch();
-  return records as any[];
+  return (records as any[]).filter((r: any) => r.active && !r.deletedAt);
 }
