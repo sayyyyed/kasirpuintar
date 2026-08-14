@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Play,
   Clock,
+  Banknote,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { Card } from "@/components/ui/Card";
@@ -24,9 +25,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 import { useShift } from "@/hooks/useShift";
-import { useEmployeeTab } from "./_layout";
+import { usePayrollSettings } from "@/hooks/usePayrollSettings";
+import { useEmployeeTab } from "@/hooks/useEmployeeTab";
 import { clockIn, clockOut } from "@/services/repositories/shiftRepository";
 import { getTransactionsByShift } from "@/services/repositories/transactionRepository";
+import { database } from "@/db";
 
 const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
@@ -34,10 +37,12 @@ export default function EmployeeDashboard() {
   const router = useRouter();
   const { goTo } = useEmployeeTab();
   const { user, signOut } = useAuth();
-  const { shift, formattedTime } = useShift(user?.id || "");
+  const { shift, formattedTime, elapsed } = useShift(user?.id || "");
+  const { enabled: payrollEnabled } = usePayrollSettings();
   const [isClocking, setIsClocking] = useState(false);
   const [todayTxns, setTodayTxns] = useState<any[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [hourlyRate, setHourlyRate] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -45,6 +50,14 @@ export default function EmployeeDashboard() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      database.get("users").find(user.id).then((u: any) => {
+        setHourlyRate(u.hourlyRate ?? 0);
+      }).catch(() => {});
+    }
+  }, [user?.id]);
 
   const formattedDate = useMemo(() => {
     return currentTime.toLocaleDateString("id-ID", {
@@ -210,7 +223,7 @@ export default function EmployeeDashboard() {
                   </Text>
                 </View>
                 <Text
-                  className="text-5xl font-sans-extrabold text-white"
+                  className="text-4xl font-sans-extrabold text-white"
                   style={{ letterSpacing: -1.5 }}
                 >
                   {formattedTime}
@@ -325,6 +338,28 @@ export default function EmployeeDashboard() {
                 <ChevronRight size={20} color={Colors.gray[400]} />
               </Pressable>
             </View>
+
+            {/* Payroll Card */}
+            {payrollEnabled && shift && hourlyRate > 0 && (
+              <View className="px-6 mb-6">
+                <View className="bg-secondary-50 rounded-lg p-4 flex-row items-center">
+                  <View className="w-12 h-12 rounded-full bg-secondary-100 items-center justify-center mr-4">
+                    <Banknote size={22} color={Colors.secondary.DEFAULT} strokeWidth={2.5} />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-xs font-sans-semibold text-gray-400 uppercase tracking-wider">
+                      Estimasi Gaji Shift Ini
+                    </Text>
+                    <Text className="text-xl font-sans-extrabold text-secondary mt-0.5">
+                      {fmt(Math.round((elapsed / 3600) * hourlyRate))}
+                    </Text>
+                    <Text className="text-[10px] font-sans text-gray-500 mt-0.5">
+                      {fmt(hourlyRate)}/jam · {Math.floor(elapsed / 3600)}j {Math.floor((elapsed % 3600) / 60)}m kerja
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
 
             {/* Clock Out */}
             <View className="px-6">

@@ -4,7 +4,7 @@ import {
   Text,
   Pressable,
   TextInput,
-  Dimensions,
+  useWindowDimensions,
   Alert,
   ScrollView,
 } from "react-native";
@@ -30,12 +30,10 @@ import { useCategories } from "@/hooks/useCategories";
 import { useAuth } from "@/hooks/useAuth";
 import { useShift } from "@/hooks/useShift";
 import SheetModal from "@/components/ui/SheetModal";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import { createTransaction } from "@/services/repositories/transactionRepository";
 import { updateShiftTotals } from "@/services/repositories/shiftRepository";
 import { pullChanges } from "@/services/sync";
-
-const { width: SCREEN_W } = Dimensions.get("window");
-const CARD_W = (SCREEN_W - 44) / 3;
 
 const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
@@ -48,6 +46,10 @@ const PAY_METHODS = [
 type PayMethod = "cash" | "qris" | "transfer";
 
 export default function POSScreen() {
+  const { width: screenW } = useWindowDimensions();
+  const numColumns = screenW < 500 ? 3 : screenW < 700 ? 4 : screenW < 900 ? 5 : 6;
+  const cardWidth = (screenW - 8 - numColumns * 12) / numColumns;
+
   const { user } = useAuth();
   const { shift } = useShift(user?.id || "");
   const products = useProducts();
@@ -99,40 +101,27 @@ export default function POSScreen() {
   }, [search, activeCat, products]);
 
   const renderProduct = useCallback(
-    ({ item }: { item: any }) => {
-      const out = (item.stock ?? 0) <= 0;
-      return (
-        <Pressable
-          className={`bg-muted rounded-lg p-3 mx-1.5 my-1.5 ${
-            out ? "opacity-40" : ""
-          }`}
-          style={{ width: CARD_W }}
-          disabled={out}
-          onPress={() => addItem(item)}
+    ({ item }: { item: any }) => (
+      <Pressable
+        className="bg-muted rounded-lg p-3 mx-1.5 my-1.5"
+        style={{ width: cardWidth }}
+        onPress={() => addItem(item)}
+      >
+        <View className="w-full aspect-square rounded-md bg-gray-200 items-center justify-center mb-2">
+          <Package size={28} color={Colors.gray[400]} strokeWidth={2} />
+        </View>
+        <Text
+          className="text-sm font-sans-bold text-foreground"
+          numberOfLines={1}
         >
-          <View className="w-full aspect-square rounded-md bg-gray-200 items-center justify-center mb-2">
-            <Package size={28} color={Colors.gray[400]} strokeWidth={2} />
-          </View>
-          <Text
-            className="text-sm font-sans-bold text-foreground"
-            numberOfLines={1}
-          >
-            {item.name}
-          </Text>
-          <Text
-            className={`text-xs font-sans mt-0.5 ${
-              out ? "text-red-500 font-sans-bold" : "text-gray-500"
-            }`}
-          >
-            {out ? "Stok habis" : `Stok: ${item.stock}`}
-          </Text>
-          <Text className="text-base font-sans-bold text-primary mt-1">
-            {fmt(item.price || 0)}
-          </Text>
-        </Pressable>
-      );
-    },
-    [addItem]
+          {item.name}
+        </Text>
+        <Text className="text-base font-sans-bold text-primary mt-1">
+          {fmt(item.price || 0)}
+        </Text>
+      </Pressable>
+    ),
+    [addItem, cardWidth]
   );
 
   const openPayment = () => {
@@ -291,7 +280,7 @@ export default function POSScreen() {
           ) : (
             <FlashList
               data={filtered}
-              numColumns={3}
+              numColumns={numColumns}
               renderItem={renderProduct}
               keyExtractor={(item: any) => item.id}
               contentContainerStyle={{ padding: 4, paddingBottom: 96 }}
@@ -501,20 +490,12 @@ export default function POSScreen() {
 
               {payMethod === "cash" && (
                 <View className="mb-4">
-                  <Text className="text-sm font-sans-semibold text-gray-500 mb-2">
-                    Uang Diterima
-                  </Text>
-                  <View className="flex-row gap-2">
-                    <View className="flex-1 flex-row items-center bg-muted rounded-md px-4">
-                      <TextInput
-                        className="flex-1 h-14 text-lg text-foreground font-sans-bold"
-                        placeholder="0"
-                        placeholderTextColor={Colors.gray[400]}
-                        keyboardType="number-pad"
+                  <View className="flex-row gap-2 mb-2">
+                    <View className="flex-1">
+                      <CurrencyInput
                         value={paidInput}
-                        onChangeText={(v) =>
-                          setPaidInput(v.replace(/[^0-9]/g, ""))
-                        }
+                        onValueChange={(v) => setPaidInput(v)}
+                        placeholder="0"
                       />
                     </View>
                     <Pressable

@@ -1,4 +1,4 @@
-import React, { useRef, useState, createContext, useContext } from "react";
+import React, { useRef, useState } from "react";
 import { View, Text, Pressable, Animated } from "react-native";
 import PagerView from "react-native-pager-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,18 +9,11 @@ import {
   Clock,
 } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
+import { EmployeeTabContext } from "@/hooks/useEmployeeTab";
 import Dashboard from "./dashboard";
 import POSScreen from "./pos";
 import Inventory from "./inventory";
 import History from "./history";
-
-export const EmployeeTabContext = createContext<{
-  goTo: (index: number) => void;
-}>({ goTo: () => {} });
-
-export function useEmployeeTab() {
-  return useContext(EmployeeTabContext);
-}
 
 const TABS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -77,11 +70,12 @@ export default function EmployeeLayout() {
       </PagerView>
 
       <View
-        className="bg-white border-t-2 border-muted"
+        className="bg-white border-t-2 border-muted items-center"
         style={{
           paddingBottom: Math.max(insets.bottom, 12),
         }}
       >
+        <View className="w-full" style={{ maxWidth: 500 }}>
         <View className="flex-row relative pt-2 pb-1">
           <Animated.View
             className="absolute top-0 h-1 bg-primary rounded-full"
@@ -118,6 +112,7 @@ export default function EmployeeLayout() {
               </Pressable>
             );
           })}
+        </View>
         </View>
       </View>
       </View>

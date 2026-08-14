@@ -22,6 +22,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import SheetModal from "@/components/ui/SheetModal";
 import Input from "@/components/ui/Input";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import {
   createExpenseEntry,
   deleteExpenseEntry,
@@ -540,12 +541,11 @@ export default function InventoryScreen() {
               value={entryName}
               onChangeText={setEntryName}
             />
-            <Input
-              label="Jumlah (Rp)"
+            <CurrencyInput
+              label="Jumlah"
               placeholder="0"
-              keyboardType="number-pad"
               value={entryAmount}
-              onChangeText={(v) => setEntryAmount(v.replace(/[^0-9]/g, ""))}
+              onValueChange={setEntryAmount}
             />
             <Input
               label="Catatan (opsional)"
