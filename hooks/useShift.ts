@@ -14,20 +14,23 @@ export function useShift(userId: string) {
 
     const sub = query.observe().subscribe((records) => {
       setShift(records.length > 0 ? records[0] : null);
+      if (records.length === 0) {
+        setElapsed(0);
+      }
     });
 
     return () => sub.unsubscribe();
   }, [userId]);
 
   useEffect(() => {
-    if (!shift?.clock_in_at) return;
+    if (!shift?.clockInAt) return;
     const tick = () => {
-      setElapsed(Math.floor((Date.now() - (shift.clock_in_at as number)) / 1000));
+      setElapsed(Math.floor((Date.now() - shift.clockInAt.getTime()) / 1000));
     };
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [shift?.clock_in_at]);
+  }, [shift?.clockInAt]);
 
   const formattedTime = useMemo(() => {
     const hrs = Math.floor(elapsed / 3600);
