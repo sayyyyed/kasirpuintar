@@ -1,9 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { Modal, View, Text, Pressable, Animated, Dimensions } from "react-native";
+import { Modal, View, Text, Pressable, Animated, useWindowDimensions } from "react-native";
 import { X } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
-
-const { height: SCREEN_H } = Dimensions.get("window");
 
 type Props = {
   visible: boolean;
@@ -13,13 +11,15 @@ type Props = {
 };
 
 export default function SheetModal({ visible, title, onClose, children }: Props) {
-  const translateY = useRef(new Animated.Value(SCREEN_H)).current;
+  const { height: screenH } = useWindowDimensions();
+  const translateY = useRef(new Animated.Value(screenH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [show, setShow] = React.useState(false);
 
   useEffect(() => {
     if (visible) {
       setShow(true);
+      translateY.setValue(screenH);
       Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0,
@@ -36,7 +36,7 @@ export default function SheetModal({ visible, title, onClose, children }: Props)
     } else if (show) {
       Animated.parallel([
         Animated.timing(translateY, {
-          toValue: SCREEN_H,
+          toValue: screenH,
           duration: 200,
           useNativeDriver: true,
         }),
@@ -48,6 +48,12 @@ export default function SheetModal({ visible, title, onClose, children }: Props)
       ]).start(() => setShow(false));
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (!show) {
+      translateY.setValue(screenH);
+    }
+  }, [screenH]);
 
   if (!show) return null;
 
@@ -62,7 +68,7 @@ export default function SheetModal({ visible, title, onClose, children }: Props)
           className="bg-white rounded-t-2xl"
           style={{
             transform: [{ translateY }],
-            maxHeight: SCREEN_H * 0.88,
+            maxHeight: screenH * 0.88,
           }}
         >
           {/* Decorative bar */}
