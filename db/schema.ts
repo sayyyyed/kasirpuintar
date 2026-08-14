@@ -7,7 +7,7 @@ const syncColumns = [
 ] as const;
 
 export const schema = appSchema({
-  version: 1,
+  version: 6,
   tables: [
     tableSchema({
       name: "users",
@@ -16,6 +16,7 @@ export const schema = appSchema({
         { name: "email", type: "string", isIndexed: true },
         { name: "role", type: "string" },
         { name: "pin_hash", type: "string", isOptional: true },
+        { name: "hourly_rate", type: "number", isOptional: true },
         { name: "active", type: "boolean" },
         ...syncColumns,
       ],
@@ -107,6 +108,7 @@ export const schema = appSchema({
         { name: "user_id", type: "string", isIndexed: true },
         { name: "name", type: "string" },
         { name: "category", type: "string" },
+        { name: "type", type: "string" },
         { name: "amount", type: "number" },
         { name: "note", type: "string", isOptional: true },
         ...syncColumns,
@@ -121,6 +123,21 @@ export const schema = appSchema({
         { name: "payload", type: "string" },
         { name: "attempts", type: "number" },
         { name: "created_at", type: "number" },
+      ],
+    }),
+    tableSchema({
+      name: "payroll_periods",
+      columns: [
+        { name: "user_id", type: "string", isIndexed: true },
+        { name: "period_start", type: "number" },
+        { name: "period_end", type: "number" },
+        { name: "total_hours", type: "number" },
+        { name: "hourly_rate", type: "number" },
+        { name: "gross_pay", type: "number" },
+        { name: "status", type: "string", isIndexed: true },
+        { name: "paid_at", type: "number", isOptional: true },
+        { name: "note", type: "string", isOptional: true },
+        ...syncColumns,
       ],
     }),
   ],

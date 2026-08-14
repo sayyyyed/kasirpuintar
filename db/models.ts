@@ -9,7 +9,9 @@ export type Role = "owner" | "cashier";
 export type ShiftStatus = "open" | "closed";
 export type PaymentMethod = "cash" | "qris" | "transfer";
 export type MovementType = "sale" | "restock" | "adjustment";
+export type ExpenseType = "income" | "expense";
 export type SyncOperation = "create" | "update" | "delete";
+export type PayrollStatus = "pending" | "paid";
 
 export class User extends Model {
   static table = "users";
@@ -18,6 +20,7 @@ export class User extends Model {
   @field("email") email!: string;
   @field("role") role!: Role;
   @field("pin_hash") pinHash?: string;
+  @field("hourly_rate") hourlyRate?: number;
   @field("active") active!: boolean;
   @readonly @date("created_at") createdAt!: Date;
   @date("updated_at") updatedAt!: Date;
@@ -119,6 +122,7 @@ export class Expense extends Model {
   @field("user_id") userId!: string;
   @field("name") name!: string;
   @field("category") category!: string;
+  @field("type") type!: ExpenseType;
   @field("amount") amount!: number;
   @field("note") note?: string;
   @readonly @date("created_at") createdAt!: Date;
@@ -135,4 +139,21 @@ export class SyncOutbox extends Model {
   @field("payload") payload!: string;
   @field("attempts") attempts!: number;
   @readonly @date("created_at") createdAt!: Date;
+}
+
+export class PayrollPeriod extends Model {
+  static table = "payroll_periods";
+
+  @field("user_id") userId!: string;
+  @date("period_start") periodStart!: Date;
+  @date("period_end") periodEnd!: Date;
+  @field("total_hours") totalHours!: number;
+  @field("hourly_rate") hourlyRate!: number;
+  @field("gross_pay") grossPay!: number;
+  @field("status") status!: PayrollStatus;
+  @date("paid_at") paidAt?: Date;
+  @field("note") note?: string;
+  @readonly @date("created_at") createdAt!: Date;
+  @date("updated_at") updatedAt!: Date;
+  @date("deleted_at") deletedAt?: Date;
 }
