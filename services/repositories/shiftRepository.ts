@@ -55,8 +55,21 @@ export async function clockOut(shiftId: string, closingCash: number) {
     });
   });
 
+  const raw = {
+    id: shift.id,
+    user_id: (shift as any).userId,
+    clock_in_at: (shift as any).clockInAt?.getTime?.() ?? null,
+    clock_out_at: (shift as any).clockOutAt?.getTime?.() ?? null,
+    opening_cash: (shift as any).openingCash,
+    closing_cash: (shift as any).closingCash ?? null,
+    sales_total: (shift as any).salesTotal,
+    expense_total: (shift as any).expenseTotal,
+    status: (shift as any).status,
+    created_at: (shift as any).createdAt?.getTime?.() ?? null,
+    deleted_at: (shift as any).deletedAt?.getTime?.() ?? null,
+  };
   await enqueueMutation("shifts", shiftId, "upsert", {
-    ...(shift as any)._raw,
+    ...raw,
     ...updates,
   });
 }
@@ -77,7 +90,7 @@ export async function updateShiftTotals(shiftId: string) {
     0
   );
   const expenseTotal = expenses.reduce(
-    (sum: number, e: any) => sum + e.amount,
+    (sum: number, e: any) => sum + (e.type === "income" ? 0 : e.amount),
     0
   );
 
@@ -95,8 +108,17 @@ export async function updateShiftTotals(shiftId: string) {
   });
 
   await enqueueMutation("shifts", shiftId, "upsert", {
+    id: shiftId,
+    user_id: (shift as any).userId,
+    clock_in_at: (shift as any).clockInAt?.getTime?.() ?? null,
+    clock_out_at: (shift as any).clockOutAt?.getTime?.() ?? null,
+    opening_cash: (shift as any).openingCash,
+    closing_cash: (shift as any).closingCash ?? null,
     sales_total: salesTotal,
     expense_total: expenseTotal,
+    status: (shift as any).status,
+    created_at: (shift as any).createdAt?.getTime?.() ?? null,
+    deleted_at: (shift as any).deletedAt?.getTime?.() ?? null,
     updated_at: now,
   });
 }

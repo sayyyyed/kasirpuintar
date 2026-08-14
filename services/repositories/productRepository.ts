@@ -67,7 +67,18 @@ export async function updateProduct(
   });
 
   await enqueueMutation("products", id, "upsert", {
-    ...(product as any)._raw,
+    id,
+    sku: (product as any).sku,
+    barcode: (product as any).barcode ?? null,
+    name: (product as any).name,
+    category_id: (product as any).categoryId,
+    price: (product as any).price,
+    cogs: (product as any).cogs,
+    stock: (product as any).stock,
+    image_url: (product as any).imageUrl ?? null,
+    active: (product as any).active,
+    created_at: (product as any).createdAt?.getTime?.() ?? null,
+    deleted_at: (product as any).deletedAt?.getTime?.() ?? null,
     ...updates,
   });
 }

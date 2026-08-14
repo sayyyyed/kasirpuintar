@@ -57,7 +57,11 @@ export async function updateCategory(
   });
 
   await enqueueMutation("categories", id, "upsert", {
-    ...(category as any)._raw,
+    id,
+    name: (category as any).name,
+    sort_order: (category as any).sortOrder,
+    created_at: (category as any).createdAt?.getTime?.() ?? null,
+    deleted_at: (category as any).deletedAt?.getTime?.() ?? null,
     ...updates,
   });
 }

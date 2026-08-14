@@ -45,6 +45,12 @@ export async function createTransaction(input: TransactionInput) {
     deleted_at: null,
   };
 
+  const outbox: {
+    table: string;
+    id: string;
+    payload: Record<string, unknown>;
+  }[] = [];
+
   await database.write(async () => {
     await database.get("transactions").create((t: any) => {
       t._raw.id = id;
@@ -55,50 +61,30 @@ export async function createTransaction(input: TransactionInput) {
       const itemId = Crypto.randomUUID();
       const itemSubtotal = item.price * item.qty;
 
-      await database.get("transaction_items").create((ti: any) => {
-        Object.assign(ti._raw, {
-          id: itemId,
-          transaction_id: id,
-          product_id: item.productId,
-          product_name: item.productName,
-          price: item.price,
-          cogs: item.cogs,
-          qty: item.qty,
-          subtotal: itemSubtotal,
-          created_at: now,
-          updated_at: now,
-          deleted_at: null,
-        });
-      });
-
-      const movementId = Crypto.randomUUID();
-      await database.get("stock_movements").create((sm: any) => {
-        Object.assign(sm._raw, {
-          id: movementId,
-          product_id: item.productId,
-          type: "sale",
-          qty: -item.qty,
-          ref_type: "transaction",
-          ref_id: id,
-          note: null,
-          created_at: now,
-          updated_at: now,
-          deleted_at: null,
-        });
-      });
-
-      const product = await database.get("products").find(item.productId);
-      await product.update((p: any) => {
-        p.stock = p.stock - item.qty;
-      });
-
-      await enqueueMutation("products", item.productId, "upsert", {
-        stock: (product as any).stock - item.qty,
+      const itemPayload: Record<string, unknown> = {
+        id: itemId,
+        transaction_id: id,
+        product_id: item.productId,
+        product_name: item.productName,
+        price: item.price,
+        cogs: item.cogs,
+        qty: item.qty,
+        subtotal: itemSubtotal,
+        created_at: now,
         updated_at: now,
+        deleted_at: null,
+      };
+
+      await database.get("transaction_items").create((ti: any) => {
+        Object.assign(ti._raw, itemPayload);
       });
+      outbox.push({ table: "transaction_items", id: itemId, payload: itemPayload });
     }
   });
 
+  for (const m of outbox) {
+    await enqueueMutation(m.table, m.id, "upsert", m.payload);
+  }
   await enqueueMutation("transactions", id, "upsert", transactionPayload);
   return id;
 }
