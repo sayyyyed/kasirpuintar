@@ -13,8 +13,9 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import "../global.css";
-import { database } from "@/db";
-import { startAutoSync, stopAutoSync } from "@/services/sync";
+import { database, ensureTables } from "@/db";
+import { startAutoSync, stopAutoSync, syncAll } from "@/services/sync";
+import { PayrollProvider } from "@/hooks/usePayrollSettings";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -39,8 +40,13 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
-      startAutoSync();
-      SplashScreen.hideAsync();
+      ensureTables()
+        .then(() => syncAll())
+        .catch(() => {})
+        .finally(() => {
+          startAutoSync();
+          SplashScreen.hideAsync();
+        });
     }
   }, [loaded]);
 
@@ -53,7 +59,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <PayrollProvider>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
@@ -62,6 +68,6 @@ export default function RootLayout() {
         <Stack.Screen name="(admin)" />
         <Stack.Screen name="+not-found" />
       </Stack>
-    </>
+    </PayrollProvider>
   );
 }

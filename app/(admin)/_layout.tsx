@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import { View, Text, Pressable, Animated } from "react-native";
 import PagerView from "react-native-pager-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,19 +7,25 @@ import {
   Users,
   Package,
   Settings,
+  DollarSign,
 } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
+import { usePayrollSettings } from "@/hooks/usePayrollSettings";
 import Analytics from "./analytics";
 import Employees from "./employees";
 import Products from "./products";
 import SettingsScreen from "./settings";
+import PayrollScreen from "./payroll";
 
 const TABS = [
   { key: "analytics", label: "Analitik", icon: BarChart3 },
   { key: "employees", label: "Staf", icon: Users },
   { key: "products", label: "Produk", icon: Package },
+  { key: "payroll", label: "Gaji", icon: DollarSign },
   { key: "settings", label: "Atur", icon: Settings },
 ];
+
+const PAGE_COUNT = TABS.length;
 
 export default function AdminLayout() {
   const pagerRef = useRef<PagerView>(null);
@@ -31,14 +37,16 @@ export default function AdminLayout() {
     pagerRef.current?.setPage(index);
   };
 
-  const tabWidth = 100 / TABS.length;
+  const tabWidth = 100 / PAGE_COUNT;
 
-  const indicatorLeft = scrollX.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: [0, tabWidth * 1, tabWidth * 2, tabWidth * 3].map(
-      (v) => `${v}%`
-    ),
-  });
+  const indicatorLeft = useMemo(
+    () =>
+      scrollX.interpolate({
+        inputRange: TABS.map((_, i) => i),
+        outputRange: TABS.map((_, i) => `${tabWidth * i}%`),
+      }),
+    [scrollX, tabWidth]
+  );
 
   return (
     <View className="flex-1 bg-white">
@@ -62,17 +70,21 @@ export default function AdminLayout() {
         <View key="products" className="flex-1">
           <Products />
         </View>
+        <View key="payroll" className="flex-1">
+          <PayrollScreen />
+        </View>
         <View key="settings" className="flex-1">
           <SettingsScreen />
         </View>
       </PagerView>
 
       <View
-        className="bg-white border-t-2 border-muted"
+        className="bg-white border-t-2 border-muted items-center"
         style={{
           paddingBottom: Math.max(insets.bottom, 12),
         }}
       >
+        <View className="w-full" style={{ maxWidth: 500 }}>
         <View className="flex-row relative pt-2 pb-1">
           <Animated.View
             className="absolute top-0 h-1 bg-primary rounded-full"
@@ -109,6 +121,7 @@ export default function AdminLayout() {
               </Pressable>
             );
           })}
+        </View>
         </View>
       </View>
     </View>

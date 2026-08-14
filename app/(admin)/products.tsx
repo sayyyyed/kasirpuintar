@@ -28,6 +28,7 @@ import {
   getAllCategories,
 } from "@/services/repositories/categoryRepository";
 import SheetModal from "@/components/ui/SheetModal";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 
 const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
@@ -117,6 +118,10 @@ export default function ProductsScreen() {
       Alert.alert("Error", "Nama produk wajib diisi");
       return;
     }
+    if (!form.categoryId) {
+      Alert.alert("Error", "Pilih kategori terlebih dahulu");
+      return;
+    }
     setIsSaving(true);
     try {
       const input = {
@@ -124,7 +129,7 @@ export default function ProductsScreen() {
         name: form.name.trim(),
         price: Number(form.price) || 0,
         cogs: Number(form.cogs) || 0,
-        categoryId: form.categoryId || "uncategorized",
+        categoryId: form.categoryId,
       };
       if (editingId) {
         await updateProduct(editingId, input);
@@ -338,18 +343,18 @@ export default function ProductsScreen() {
               placeholder="NSGR-001"
             />
             <Field
-              label="Harga Jual (Rp)"
+              label="Harga Jual"
               value={form.price}
               onChangeText={(v) => setForm({ ...form, price: v })}
               placeholder="15000"
-              keyboardType="numeric"
+              currency
             />
             <Field
-              label="Harga Pokok / COGS (Rp)"
+              label="Harga Pokok / COGS"
               value={form.cogs}
               onChangeText={(v) => setForm({ ...form, cogs: v })}
               placeholder="8000"
-              keyboardType="numeric"
+              currency
             />
 
             <View>
@@ -421,13 +426,25 @@ function Field({
   onChangeText,
   placeholder,
   keyboardType,
+  currency,
 }: {
   label: string;
   value: string;
   onChangeText: (v: string) => void;
   placeholder: string;
   keyboardType?: "default" | "numeric";
+  currency?: boolean;
 }) {
+  if (currency) {
+    return (
+      <CurrencyInput
+        label={label}
+        value={value}
+        onValueChange={onChangeText}
+        placeholder={placeholder}
+      />
+    );
+  }
   return (
     <View>
       <Text className="text-sm font-sans-semibold text-gray-500 mb-2">

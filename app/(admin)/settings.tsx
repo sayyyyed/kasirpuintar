@@ -14,11 +14,15 @@ import {
   CloudOff,
   RefreshCw,
   LogOut,
+  Trash2,
+  DollarSign,
 } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
 import { syncAll, startAutoSync, stopAutoSync } from "@/services/sync";
 import { useAuth } from "@/hooks/useAuth";
+import { usePayrollSettings } from "@/hooks/usePayrollSettings";
+import { database } from "@/db";
 
 type SettingItemProps = {
   icon: React.ReactNode;
@@ -75,6 +79,7 @@ export default function SettingsScreen() {
   const [offlineMode, setOfflineMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const { enabled: payrollEnabled, toggle: togglePayroll } = usePayrollSettings();
 
   const toggleAutoSync = useCallback(
     (value: boolean) => {
@@ -91,8 +96,15 @@ export default function SettingsScreen() {
   const handleSyncNow = useCallback(async () => {
     setIsSyncing(true);
     try {
-      await syncAll();
-      Alert.alert("Sukses", "Sinkronisasi selesai");
+      const failed = await syncAll();
+      if (failed > 0) {
+        Alert.alert(
+          "Sebagian Gagal",
+          `${failed} perubahan belum terkirim ke server. Periksa koneksi & sesi lalu sync lagi.`
+        );
+      } else {
+        Alert.alert("Sukses", "Sinkronisasi selesai");
+      }
     } catch {
       Alert.alert("Gagal", "Sinkronisasi gagal, coba lagi");
     } finally {
@@ -103,6 +115,29 @@ export default function SettingsScreen() {
   const handleLogout = useCallback(async () => {
     await signOut();
     router.replace("/(auth)/login");
+  }, []);
+
+  const handlePurgeOutbox = useCallback(() => {
+    Alert.alert(
+      "Bersihkan Outbox",
+      "Hapus semua item antrean sync yang gagal? Data lokal tetap aman.",
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Hapus",
+          style: "destructive",
+          onPress: async () => {
+            const items = await database.get("sync_outbox").query().fetch();
+            for (const item of items) {
+              await database.write(async () => {
+                await item.destroyPermanently();
+              });
+            }
+            Alert.alert("Sukses", `${items.length} item outbox dihapus.`);
+          },
+        },
+      ]
+    );
   }, []);
 
   return (
@@ -202,6 +237,18 @@ export default function SettingsScreen() {
                 {isSyncing ? "Syncing..." : "Sync Sekarang"}
               </Text>
             </Pressable>
+
+            {outboxPending > 0 && (
+              <Pressable
+                className="h-12 rounded-md items-center justify-center flex-row gap-2 mt-3 border-2 border-red-400"
+                onPress={handlePurgeOutbox}
+              >
+                <Trash2 size={18} color="#EF4444" strokeWidth={2.5} />
+                <Text className="text-base font-sans-bold text-red-500">
+                  Bersihkan Outbox ({outboxPending})
+                </Text>
+              </Pressable>
+            )}
           </View>
 
           <View className="bg-muted rounded-lg px-4">
@@ -245,6 +292,23 @@ export default function SettingsScreen() {
               subtitle="Peringatan stok hampir habis"
               value={true}
               onToggle={() => {}}
+            />
+          </View>
+        </View>
+
+        {/* Keuangan Section */}
+        <View className="px-6 mb-6">
+          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Keuangan
+          </Text>
+          <View className="bg-muted rounded-lg px-4">
+            <SettingItem
+              icon={<DollarSign size={20} color={Colors.secondary.DEFAULT} strokeWidth={2} />}
+              iconBg="bg-secondary-100"
+              title="Sistem Upah"
+              subtitle="Hitung gaji karyawan berdasarkan jam kerja"
+              value={payrollEnabled}
+              onToggle={togglePayroll}
             />
           </View>
         </View>

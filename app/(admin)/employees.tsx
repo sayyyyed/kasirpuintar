@@ -4,15 +4,19 @@ import {
   Text,
   Pressable,
   ScrollView,
-  TextInput,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { UserPlus, CheckCircle } from "lucide-react-native";
+import { UserPlus, CheckCircle, ChevronRight } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import { createEmployee, getEmployees } from "@/services/auth";
 import SheetModal from "@/components/ui/SheetModal";
 import { Input } from "@/components/ui/Input";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
+import { usePayrollSettings } from "@/hooks/usePayrollSettings";
+import EmployeeDetail from "@/components/admin/EmployeeDetail";
+
+const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
 type Employee = {
   id: string;
@@ -20,25 +24,38 @@ type Employee = {
   email: string;
   role: "owner" | "cashier";
   active: boolean;
+  hourlyRate?: number;
 };
 
 export default function EmployeesScreen() {
+  const { enabled: payrollEnabled } = usePayrollSettings();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formPin, setFormPin] = useState("");
+  const [formRate, setFormRate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdPin, setCreatedPin] = useState<string | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   const loadEmployees = async () => {
     const data = await getEmployees();
-    setEmployees(data);
+    setEmployees(data as Employee[]);
   };
 
   useEffect(() => {
     loadEmployees();
   }, []);
+
+  const openForm = () => {
+    setFormName("");
+    setFormEmail("");
+    setFormPin("");
+    setFormRate("");
+    setCreatedPin(null);
+    setShowForm(true);
+  };
 
   const handleCreate = async () => {
     if (!formName.trim() || !formEmail.trim() || !formPin.trim()) {
@@ -55,12 +72,10 @@ export default function EmployeesScreen() {
       await createEmployee(
         formName.trim(),
         formEmail.trim().toLowerCase(),
-        formPin
+        formPin,
+        payrollEnabled && formRate ? Number(formRate) : undefined
       );
       setCreatedPin(formPin);
-      setFormName("");
-      setFormEmail("");
-      setFormPin("");
       await loadEmployees();
     } catch (err: any) {
       Alert.alert("Gagal", err.message || "Gagal membuat karyawan");
@@ -68,11 +83,14 @@ export default function EmployeesScreen() {
     setIsSubmitting(false);
   };
 
+  const handleEmployeePress = (emp: Employee) => {
+    setSelectedEmployee(emp);
+  };
+
   const activeCount = employees.filter((e) => e.active).length;
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
       <View className="px-6 pt-6 pb-2 flex-row items-end justify-between">
         <View>
           <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
@@ -87,14 +105,13 @@ export default function EmployeesScreen() {
         </View>
         <Pressable
           className="bg-primary rounded-md px-4 py-3 flex-row items-center"
-          onPress={() => setShowForm(true)}
+          onPress={openForm}
         >
           <UserPlus size={18} color="#FFFFFF" strokeWidth={2.5} />
           <Text className="text-sm font-sans-bold text-white ml-2">Tambah</Text>
         </Pressable>
       </View>
 
-      {/* Summary */}
       <View className="px-6 py-4 flex-row gap-3">
         <View className="flex-1 bg-secondary-50 rounded-lg p-4">
           <Text className="text-2xl font-sans-extrabold text-secondary">
@@ -114,7 +131,6 @@ export default function EmployeesScreen() {
         </View>
       </View>
 
-      {/* Employee List */}
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-6 pb-8"
@@ -133,9 +149,10 @@ export default function EmployeesScreen() {
         {employees.map((item) => {
           const isOwner = item.role === "owner";
           return (
-            <View
+            <Pressable
               key={item.id}
-              className="flex-row items-center py-4 border-b-2 border-muted"
+              className="flex-row items-center py-4 border-b-2 border-muted active:bg-gray-50"
+              onPress={() => handleEmployeePress(item)}
             >
               <View
                 className={`w-12 h-12 rounded-full items-center justify-center ${
@@ -150,9 +167,16 @@ export default function EmployeesScreen() {
                 <Text className="text-base font-sans-bold text-foreground">
                   {item.name}
                 </Text>
-                <Text className="text-xs font-sans text-gray-500 mt-0.5">
-                  {item.email}
-                </Text>
+                <View className="flex-row items-center gap-3 mt-0.5">
+                  <Text className="text-xs font-sans text-gray-500">
+                    {item.email}
+                  </Text>
+                  {payrollEnabled && item.hourlyRate != null && item.hourlyRate > 0 && (
+                    <Text className="text-xs font-sans-bold text-primary">
+                      {fmt(item.hourlyRate)}/jam
+                    </Text>
+                  )}
+                </View>
               </View>
               <View
                 className={`px-3 py-1 rounded-full mr-2 ${
@@ -168,7 +192,7 @@ export default function EmployeesScreen() {
                 </Text>
               </View>
               <View
-                className={`px-3 py-1 rounded-full ${
+                className={`px-3 py-1 rounded-full mr-1 ${
                   item.active ? "bg-secondary-100" : "bg-gray-200"
                 }`}
               >
@@ -180,19 +204,16 @@ export default function EmployeesScreen() {
                   {item.active ? "Aktif" : "Nonaktif"}
                 </Text>
               </View>
-            </View>
+              <ChevronRight size={16} color={Colors.gray[300]} />
+            </Pressable>
           );
         })}
       </ScrollView>
 
-      {/* SheetModal Tambah Karyawan */}
       <SheetModal
         visible={showForm}
         title="Tambah Karyawan"
-        onClose={() => {
-          setShowForm(false);
-          setCreatedPin(null);
-        }}
+        onClose={() => setShowForm(false)}
       >
         <ScrollView keyboardShouldPersistTaps="handled">
           {createdPin ? (
@@ -222,10 +243,7 @@ export default function EmployeesScreen() {
               </View>
               <Pressable
                 className="h-14 rounded-md bg-primary items-center justify-center mt-6 w-full"
-                onPress={() => {
-                  setShowForm(false);
-                  setCreatedPin(null);
-                }}
+                onPress={() => setShowForm(false)}
               >
                 <Text className="text-lg font-sans-bold text-white">Selesai</Text>
               </Pressable>
@@ -238,7 +256,6 @@ export default function EmployeesScreen() {
                 value={formName}
                 onChangeText={setFormName}
               />
-
               <Input
                 label="Email"
                 placeholder="email@example.com"
@@ -247,7 +264,6 @@ export default function EmployeesScreen() {
                 value={formEmail}
                 onChangeText={setFormEmail}
               />
-
               <Input
                 label="PIN (4-6 digit)"
                 placeholder="1234"
@@ -260,6 +276,15 @@ export default function EmployeesScreen() {
               <Text className="text-xs font-sans text-gray-400 -mt-2 px-1">
                 PIN ini digunakan karyawan untuk login
               </Text>
+
+              {payrollEnabled && (
+                <CurrencyInput
+                  label="Upah per Jam (opsional)"
+                  placeholder="15000"
+                  value={formRate}
+                  onValueChange={setFormRate}
+                />
+              )}
 
               <Pressable
                 className={`h-14 rounded-md items-center justify-center mt-2 ${
@@ -276,6 +301,13 @@ export default function EmployeesScreen() {
           )}
         </ScrollView>
       </SheetModal>
+
+      <EmployeeDetail
+        visible={!!selectedEmployee}
+        employee={selectedEmployee}
+        onClose={() => setSelectedEmployee(null)}
+        onUpdate={() => loadEmployees()}
+      />
     </SafeAreaView>
   );
 }
