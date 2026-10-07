@@ -138,13 +138,13 @@ export default function ReportsSheet({ visible, onClose }: Props) {
             <Pressable
               key={p.key}
               className={`flex-1 py-2 rounded-md ${
-                preset === p.key ? "bg-primary" : "bg-muted"
+                preset === p.key ? "bg-kumo-brand" : "bg-kumo-fill"
               }`}
               onPress={() => setPreset(p.key)}
             >
               <Text
-                className={`text-xs font-sans-bold text-center ${
-                  preset === p.key ? "text-white" : "text-gray-600"
+                className={`text-xs font-sans-semibold text-center ${
+                  preset === p.key ? "text-kumo-inverse" : "text-kumo-subtle"
                 }`}
               >
                 {p.label}
@@ -153,9 +153,9 @@ export default function ReportsSheet({ visible, onClose }: Props) {
           ))}
         </View>
 
-        <View className="flex-row items-center mb-4 bg-muted rounded-md px-4 py-3">
+        <View className="flex-row items-center mb-4 bg-kumo-base border border-kumo-hairline rounded-lg px-4 py-3">
           <Calendar size={16} color={Colors.primary.DEFAULT} strokeWidth={2.5} />
-          <Text className="ml-2 text-sm font-sans-bold text-foreground">
+          <Text className="ml-2 text-sm font-sans-semibold text-kumo-default">
             {range.label}
           </Text>
         </View>
@@ -168,52 +168,52 @@ export default function ReportsSheet({ visible, onClose }: Props) {
           <>
             {/* Summary */}
             <View className="flex-row gap-3 mb-4">
-              <View className="flex-1 bg-primary rounded-lg p-4">
+              <View className="flex-1 bg-kumo-brand rounded-lg p-4">
                 <DollarSign size={18} color="#FFF" strokeWidth={2.5} />
-                <Text className="text-lg font-sans-bold text-white mt-2">
+                <Text className="text-lg font-sans-semibold text-kumo-inverse mt-2">
                   {fmt(revenue)}
                 </Text>
-                <Text className="text-[10px] font-sans-medium text-white opacity-70 uppercase tracking-wider">
+                <Text className="text-[10px] font-sans-medium text-kumo-inverse opacity-70  ">
                   Pendapatan
                 </Text>
               </View>
-              <View className="flex-1 bg-accent-50 rounded-lg p-4">
+              <View className="flex-1 bg-kumo-warning-tint rounded-lg p-4">
                 <TrendingDown size={18} color={Colors.accent.DEFAULT} strokeWidth={2.5} />
-                <Text className="text-lg font-sans-bold text-foreground mt-2">
+                <Text className="text-lg font-sans-semibold text-kumo-default mt-2">
                   {fmt(expense)}
                 </Text>
-                <Text className="text-[10px] font-sans-medium text-gray-500 uppercase tracking-wider">
+                <Text className="text-[10px] font-sans-medium text-kumo-subtle  ">
                   Pengeluaran
                 </Text>
               </View>
             </View>
 
             <View className="flex-row gap-3 mb-6">
-              <View className="flex-1 bg-secondary-50 rounded-lg p-4">
-                <Text className="text-lg font-sans-bold text-secondary">
+              <View className="flex-1 bg-kumo-success-tint rounded-lg p-4">
+                <Text className="text-lg font-sans-semibold text-kumo-success">
                   {fmt(income)}
                 </Text>
-                <Text className="text-[10px] font-sans-medium text-gray-500 uppercase tracking-wider">
+                <Text className="text-[10px] font-sans-medium text-kumo-subtle  ">
                   Pemasukan Manual
                 </Text>
               </View>
-              <View className="flex-1 bg-muted rounded-lg p-4">
-                <Text className="text-lg font-sans-bold text-foreground">
+              <View className="flex-1 bg-kumo-base border border-kumo-hairline rounded-lg p-4">
+                <Text className="text-lg font-sans-semibold text-kumo-default">
                   {txnCount}
                 </Text>
-                <Text className="text-[10px] font-sans-medium text-gray-500 uppercase tracking-wider">
+                <Text className="text-[10px] font-sans-medium text-kumo-subtle  ">
                   Transaksi ({totalItems} item)
                 </Text>
               </View>
             </View>
 
             {/* Laba/Rugi */}
-            <View className="bg-primary rounded-lg p-4 mb-6">
+            <View className="bg-kumo-brand rounded-lg p-4 mb-6">
               <View className="flex-row items-center justify-between">
-                <Text className="text-sm font-sans-bold text-white opacity-80 uppercase tracking-wider">
+                <Text className="text-sm font-sans-semibold text-kumo-inverse opacity-80  ">
                   Laba Bersih
                 </Text>
-                <Text className="text-xl font-sans-extrabold text-white">
+                <Text className="text-xl font-sans-semibold text-kumo-inverse">
                   {fmt(revenue + income - expense)}
                 </Text>
               </View>
@@ -222,23 +222,23 @@ export default function ReportsSheet({ visible, onClose }: Props) {
             {/* Transactions List */}
             {txns.length > 0 ? (
               <View className="mb-4">
-                <Text className="text-sm font-sans-bold text-gray-500 uppercase tracking-wider mb-2">
+                <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-2">
                   Transaksi ({txns.length})
                 </Text>
                 {txns.map((t: any) => (
                   <View
                     key={t.id}
-                    className="flex-row items-center justify-between py-3 border-b-2 border-muted"
+                    className="flex-row items-center justify-between py-3 border-b border-kumo-line"
                   >
                     <View className="flex-row items-center flex-1">
-                      <View className="w-8 h-8 rounded-full bg-muted items-center justify-center mr-3">
+                      <View className="w-8 h-8 rounded-full bg-kumo-fill items-center justify-center mr-3">
                         <ShoppingCart size={14} color={Colors.primary.DEFAULT} strokeWidth={2} />
                       </View>
                       <View className="flex-1">
-                        <Text className="text-xs font-sans-bold text-foreground">
+                        <Text className="text-xs font-sans-semibold text-kumo-default">
                           {formatPayment(t.paymentMethod)}
                         </Text>
-                        <Text className="text-[10px] font-sans text-gray-400">
+                        <Text className="text-[10px] font-sans text-kumo-subtle">
                           {t.createdAt
                             ? t.createdAt.toLocaleTimeString("id-ID", {
                                 hour: "2-digit",
@@ -248,7 +248,7 @@ export default function ReportsSheet({ visible, onClose }: Props) {
                         </Text>
                       </View>
                     </View>
-                    <Text className="text-sm font-sans-bold text-foreground">
+                    <Text className="text-sm font-sans-semibold text-kumo-default">
                       {fmt(t.total || 0)}
                     </Text>
                   </View>
@@ -256,7 +256,7 @@ export default function ReportsSheet({ visible, onClose }: Props) {
               </View>
             ) : (
               <View className="items-center py-6">
-                <Text className="text-sm font-sans text-gray-400">
+                <Text className="text-sm font-sans text-kumo-subtle">
                   Tidak ada transaksi
                 </Text>
               </View>
@@ -265,18 +265,18 @@ export default function ReportsSheet({ visible, onClose }: Props) {
             {/* Expense entries */}
             {entries.length > 0 && (
               <View className="mb-4">
-                <Text className="text-sm font-sans-bold text-gray-500 uppercase tracking-wider mb-2">
+                <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-2">
                   Catatan Kas ({entries.length})
                 </Text>
                 {entries.map((e: any) => (
                   <View
                     key={e.id}
-                    className="flex-row items-center justify-between py-3 border-b-2 border-muted"
+                    className="flex-row items-center justify-between py-3 border-b border-kumo-line"
                   >
                     <View className="flex-row items-center flex-1">
                       <View
                         className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${
-                          e.type === "income" ? "bg-secondary-100" : "bg-accent-100"
+                          e.type === "income" ? "bg-kumo-success-tint" : "bg-kumo-warning-tint"
                         }`}
                       >
                         {e.type === "income" ? (
@@ -286,10 +286,10 @@ export default function ReportsSheet({ visible, onClose }: Props) {
                         )}
                       </View>
                       <View className="flex-1">
-                        <Text className="text-xs font-sans-bold text-foreground">
+                        <Text className="text-xs font-sans-semibold text-kumo-default">
                           {e.name}
                         </Text>
-                        <Text className="text-[10px] font-sans text-gray-400">
+                        <Text className="text-[10px] font-sans text-kumo-subtle">
                           {e.category}
                           {e.createdAt
                             ? " · " + e.createdAt.toLocaleString("id-ID", {
@@ -301,8 +301,8 @@ export default function ReportsSheet({ visible, onClose }: Props) {
                       </View>
                     </View>
                     <Text
-                      className={`text-sm font-sans-bold ${
-                        e.type === "income" ? "text-secondary" : "text-accent"
+                      className={`text-sm font-sans-semibold ${
+                        e.type === "income" ? "text-kumo-success" : "text-kumo-warning"
                       }`}
                     >
                       {e.type === "income" ? "+" : "-"}{fmt(e.amount || 0)}

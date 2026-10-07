@@ -19,6 +19,7 @@ import {
 import { Colors } from "@/constants/Colors";
 import { database } from "@/db";
 import ReportsSheet from "@/components/admin/ReportsSheet";
+import Button from "@/components/ui/Button";
 
 const fmtShort = (n: number) => {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(0)}jt`;
@@ -130,7 +131,7 @@ export default function AnalyticsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-kumo-base">
       <ScrollView
         className="flex-1"
         contentContainerClassName="pb-8"
@@ -139,51 +140,52 @@ export default function AnalyticsScreen() {
         {/* Header */}
         <View className="px-6 pt-6 pb-2 flex-row items-end justify-between">
           <View>
-            <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
+            <Text className="text-sm font-sans-semibold text-kumo-subtle  ">
               Dashboard Pemilik
             </Text>
             <Text
-              className="text-3xl font-sans-extrabold text-foreground mt-1"
-              style={{ letterSpacing: -0.6 }}
+              className="text-3xl font-sans-semibold text-kumo-default mt-1"
+
             >
               Analitik
             </Text>
           </View>
-          <Pressable
-            className="bg-muted rounded-md px-4 py-2.5 flex-row items-center active:bg-gray-200"
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Calendar size={16} color={Colors.primary.DEFAULT} strokeWidth={2.5} />}
             onPress={() => setShowReports(true)}
           >
-            <Calendar size={16} color={Colors.primary.DEFAULT} strokeWidth={2.5} />
-            <Text className="ml-2 text-xs font-sans-bold text-primary uppercase tracking-wider">
-              Riwayat
-            </Text>
-            <ChevronRight size={14} color={Colors.primary.DEFAULT} />
-          </Pressable>
+            <View className="flex-row items-center gap-2">
+              <Text className="text-sm font-sans-medium text-kumo-default">Riwayat</Text>
+              <ChevronRight size={14} color={Colors.primary.DEFAULT} />
+            </View>
+          </Button>
         </View>
 
         {/* Revenue Card */}
         <View className="px-6 mt-4">
-          <View className="bg-primary rounded-lg p-6">
-            <View className="absolute top-3 right-3 w-24 h-24 rounded-full bg-white opacity-5" />
-            <View className="absolute bottom-2 right-16 w-16 h-16 rounded-lg bg-white opacity-5 rotate-45" />
+          <View className="bg-kumo-brand rounded-lg p-6">
+            <View className="absolute top-3 right-3 w-24 h-24 rounded-full bg-kumo-base opacity-5" />
+            <View className="absolute bottom-2 right-16 w-16 h-16 rounded-lg bg-kumo-base opacity-5 rotate-45" />
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="text-sm font-sans-semibold text-white opacity-80 uppercase tracking-wider">
+                <Text className="text-sm font-sans-semibold text-kumo-inverse opacity-80  ">
                   Pendapatan Hari Ini
                 </Text>
                 <Text
-                  className="text-3xl font-sans-extrabold text-white mt-2"
-                  style={{ letterSpacing: -0.8 }}
+                  className="text-3xl font-sans-semibold text-kumo-inverse mt-2"
+
                 >
                   {fmt(todayRevenue)}
                 </Text>
                 {todayTxns > 0 && (
-                  <Text className="text-xs font-sans-medium text-white opacity-60 mt-1">
+                  <Text className="text-xs font-sans-medium text-kumo-inverse opacity-60 mt-1">
                     {todayTxns} transaksi
                   </Text>
                 )}
               </View>
-              <View className="w-16 h-16 rounded-full bg-white/10 items-center justify-center">
+              <View className="w-16 h-16 rounded-full bg-kumo-inverse/10 items-center justify-center">
                 <DollarSign size={28} color="#FFFFFF" strokeWidth={2.5} />
               </View>
             </View>
@@ -192,32 +194,32 @@ export default function AnalyticsScreen() {
 
         {/* KPI Row */}
         <View className="px-6 mt-3 flex-row gap-3">
-          <View className="flex-1 bg-secondary-50 rounded-lg p-5">
-            <View className="w-12 h-12 rounded-full bg-secondary-100 items-center justify-center mb-3">
+          <View className="flex-1 bg-kumo-success-tint rounded-lg p-5">
+            <View className="w-12 h-12 rounded-full bg-kumo-success-tint items-center justify-center mb-3">
               <Users size={22} color={Colors.secondary.DEFAULT} strokeWidth={2.5} />
             </View>
             <Text
-              className="text-3xl font-sans-extrabold text-foreground"
-              style={{ letterSpacing: -0.5 }}
+              className="text-3xl font-sans-semibold text-kumo-default"
+
             >
               {activeShifts}
             </Text>
-            <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
+            <Text className="text-xs font-sans-semibold text-kumo-subtle   mt-1">
               Shift Aktif
             </Text>
           </View>
 
-          <View className="flex-1 bg-accent-50 rounded-lg p-5">
-            <View className="w-12 h-12 rounded-full bg-accent-100 items-center justify-center mb-3">
+          <View className="flex-1 bg-kumo-warning-tint rounded-lg p-5">
+            <View className="w-12 h-12 rounded-full bg-kumo-warning-tint items-center justify-center mb-3">
               <AlertTriangle size={22} color={Colors.accent.DEFAULT} strokeWidth={2.5} />
             </View>
             <Text
-              className={`text-3xl font-sans-extrabold ${lowStock > 0 ? "text-red-500" : "text-foreground"}`}
-              style={{ letterSpacing: -0.5 }}
+              className={`text-3xl font-sans-semibold ${lowStock > 0 ? "text-kumo-danger" : "text-kumo-default"}`}
+
             >
               {lowStock}
             </Text>
-            <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
+            <Text className="text-xs font-sans-semibold text-kumo-subtle   mt-1">
               Stok Rendah
             </Text>
           </View>
@@ -225,14 +227,14 @@ export default function AnalyticsScreen() {
 
         {/* Weekly Sales Chart */}
         <View className="px-6 mt-8">
-          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-4">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-4">
             Penjualan 7 Hari
           </Text>
-          <View className="bg-muted rounded-lg p-5">
+          <View className="bg-kumo-base border border-kumo-hairline rounded-lg p-5">
             <View className="flex-row items-end justify-between" style={{ height: 120 }}>
               {weekly.map((d, i) => (
                 <View key={i} className="items-center flex-1">
-                  <Text className="text-[10px] font-sans-bold text-gray-600 mb-1">
+                  <Text className="text-[10px] font-sans-semibold text-kumo-subtle mb-1">
                     {d.total > 0 ? fmtShort(d.total) : ""}
                   </Text>
                   <View
@@ -242,7 +244,7 @@ export default function AnalyticsScreen() {
                       backgroundColor: d.total > 0 ? WEEK_COLORS[i] : Colors.gray[200],
                     }}
                   />
-                  <Text className="text-[10px] font-sans-semibold text-gray-400 mt-2">
+                  <Text className="text-[10px] font-sans-semibold text-kumo-subtle mt-2">
                     {d.day}
                   </Text>
                 </View>
@@ -253,23 +255,23 @@ export default function AnalyticsScreen() {
 
         {/* Top Products */}
         <View className="px-6 mt-8">
-          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-3">
             Produk Terlaris Hari Ini
           </Text>
           {topProducts.length === 0 ? (
-            <View className="bg-muted rounded-lg p-6 items-center">
+            <View className="bg-kumo-base border border-kumo-hairline rounded-lg p-6 items-center">
               <Package size={28} color={Colors.gray[300]} strokeWidth={1.5} />
-              <Text className="text-sm font-sans-medium text-gray-400 mt-2">
+              <Text className="text-sm font-sans-medium text-kumo-subtle mt-2">
                 Belum ada penjualan hari ini
               </Text>
             </View>
           ) : (
-            <View className="bg-muted rounded-lg">
+            <View className="bg-kumo-base border border-kumo-hairline rounded-lg">
               {topProducts.map((p, i) => (
                 <View
                   key={i}
                   className={`flex-row items-center py-3 px-4 ${
-                    i < topProducts.length - 1 ? "border-b-2 border-white" : ""
+                    i < topProducts.length - 1 ? "border-b border-kumo-inverse" : ""
                   }`}
                 >
                   <View
@@ -277,21 +279,21 @@ export default function AnalyticsScreen() {
                     style={{ backgroundColor: WEEK_COLORS[i] + "1A" }}
                   >
                     <Text
-                      className="text-xs font-sans-extrabold"
+                      className="text-xs font-sans-semibold"
                       style={{ color: WEEK_COLORS[i] }}
                     >
                       {i + 1}
                     </Text>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-sm font-sans-bold text-foreground" numberOfLines={1}>
+                    <Text className="text-sm font-sans-semibold text-kumo-default" numberOfLines={1}>
                       {p.name}
                     </Text>
-                    <Text className="text-xs font-sans text-gray-400">
+                    <Text className="text-xs font-sans text-kumo-subtle">
                       {p.qty}x terjual
                     </Text>
                   </View>
-                  <Text className="text-sm font-sans-bold text-primary">
+                  <Text className="text-sm font-sans-semibold text-kumo-brand">
                     {fmt(p.total)}
                   </Text>
                 </View>

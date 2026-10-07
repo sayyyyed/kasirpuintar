@@ -29,6 +29,7 @@ import {
 } from "@/services/repositories/categoryRepository";
 import SheetModal from "@/components/ui/SheetModal";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
+import { sanitizeCurrency } from "@/utils/currency";
 
 const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
@@ -127,8 +128,8 @@ export default function ProductsScreen() {
       const input = {
         sku: form.sku.trim() || form.name.trim().slice(0, 3).toUpperCase(),
         name: form.name.trim(),
-        price: Number(form.price) || 0,
-        cogs: Number(form.cogs) || 0,
+        price: sanitizeCurrency(form.price),
+        cogs: sanitizeCurrency(form.cogs),
         categoryId: form.categoryId,
       };
       if (editingId) {
@@ -169,58 +170,58 @@ export default function ProductsScreen() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-kumo-base">
       <View className="px-6 pt-6 pb-2 flex-row items-end justify-between">
         <View>
-          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle  ">
             Menu
           </Text>
           <Text
-            className="text-2xl font-sans-extrabold text-foreground mt-1"
-            style={{ letterSpacing: -0.5 }}
+            className="text-2xl font-sans-semibold text-kumo-default mt-1"
+
           >
             Produk
           </Text>
         </View>
         <Pressable
-          className="bg-primary rounded-md px-4 py-3 flex-row items-center"
+          className="bg-kumo-brand rounded-md px-4 py-3 flex-row items-center"
           onPress={openCreate}
         >
           <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
-          <Text className="text-sm font-sans-bold text-white ml-2">Tambah</Text>
+          <Text className="text-sm font-sans-semibold text-kumo-inverse ml-2">Tambah</Text>
         </Pressable>
       </View>
 
       <View className="px-6 py-4 flex-row gap-3">
-        <View className="flex-1 bg-primary-50 rounded-lg p-4">
-          <View className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center mb-2">
+        <View className="flex-1 bg-kumo-info-tint rounded-lg p-4">
+          <View className="w-10 h-10 rounded-full bg-kumo-info-tint items-center justify-center mb-2">
             <Package size={18} color={Colors.primary.DEFAULT} strokeWidth={2.5} />
           </View>
-          <Text className="text-xl font-sans-extrabold text-foreground">
+          <Text className="text-xl font-sans-semibold text-kumo-default">
             {totalProducts}
           </Text>
-          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
+          <Text className="text-xs font-sans-semibold text-kumo-subtle   mt-1">
             Menu
           </Text>
         </View>
-        <View className="flex-1 bg-secondary-50 rounded-lg p-4">
-          <View className="w-10 h-10 rounded-full bg-secondary-100 items-center justify-center mb-2">
+        <View className="flex-1 bg-kumo-success-tint rounded-lg p-4">
+          <View className="w-10 h-10 rounded-full bg-kumo-success-tint items-center justify-center mb-2">
             <LayoutGrid size={18} color={Colors.secondary.DEFAULT} strokeWidth={2.5} />
           </View>
-          <Text className="text-xl font-sans-extrabold text-foreground">
+          <Text className="text-xl font-sans-semibold text-kumo-default">
             {totalCategories}
           </Text>
-          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
+          <Text className="text-xs font-sans-semibold text-kumo-subtle   mt-1">
             Kategori
           </Text>
         </View>
       </View>
 
       <View className="px-6 pb-2">
-        <View className="flex-row items-center bg-muted rounded-md px-4">
+        <View className="flex-row items-center bg-kumo-fill rounded-md px-4">
           <Search size={18} color={Colors.gray[400]} strokeWidth={2} />
           <TextInput
-            className="flex-1 h-12 ml-3 text-base text-foreground font-sans"
+            className="flex-1 h-12 ml-3 text-base text-kumo-default font-sans"
             placeholder="Cari produk atau SKU..."
             placeholderTextColor={Colors.gray[400]}
             value={search}
@@ -241,14 +242,14 @@ export default function ProductsScreen() {
               <Pressable
                 key={cat}
                 className={`px-5 py-2.5 rounded-md ${
-                  isActive ? "bg-primary" : "bg-muted"
+                  isActive ? "bg-kumo-brand" : "bg-kumo-fill"
                 }`}
                 style={{ minWidth: 64 }}
                 onPress={() => setActiveCat(cat)}
               >
                 <Text
                   className={`text-sm font-sans-semibold text-center ${
-                    isActive ? "text-white" : "text-gray-600"
+                    isActive ? "text-kumo-inverse" : "text-kumo-subtle"
                   }`}
                 >
                   {catNames[cat] || cat}
@@ -262,10 +263,10 @@ export default function ProductsScreen() {
       {products.length === 0 ? (
         <View className="flex-1 items-center justify-center py-12">
           <Package size={40} color={Colors.gray[300]} strokeWidth={1.5} />
-          <Text className="text-base font-sans-medium text-gray-400 mt-3">
+          <Text className="text-base font-sans-medium text-kumo-subtle mt-3">
             Belum ada produk
           </Text>
-          <Text className="text-sm font-sans text-gray-400 mt-1">
+          <Text className="text-sm font-sans text-kumo-subtle mt-1">
             Tambahkan produk via tombol Tambah
           </Text>
         </View>
@@ -279,30 +280,30 @@ export default function ProductsScreen() {
               ? Math.round((margin / item.price) * 100)
               : 0;
             return (
-              <View className="flex-row items-center py-4 border-b-2 border-muted">
+              <View className="flex-row items-center py-4 border-b border-kumo-line">
                 <Pressable className="flex-row flex-1 items-center" onPress={() => openEdit(item)}>
                   <View
-                    className="w-14 h-14 rounded-lg items-center justify-center bg-muted"
+                    className="w-14 h-14 rounded-lg items-center justify-center bg-kumo-fill"
                   >
                     <Text className="text-xl">📦</Text>
                   </View>
 
                   <View className="ml-4 flex-1">
-                    <Text className="text-base font-sans-bold text-foreground">
+                    <Text className="text-base font-sans-semibold text-kumo-default">
                       {item.name}
                     </Text>
-                    <Text className="text-xs font-sans text-gray-500 mt-0.5">
+                    <Text className="text-xs font-sans text-kumo-subtle mt-0.5">
                       SKU: {item.sku || "-"}
                     </Text>
                     <View className="flex-row items-center mt-1 gap-3">
-                      <Text className="text-xs font-sans-medium text-primary">
+                      <Text className="text-xs font-sans-medium text-kumo-brand">
                         {fmt(item.price || 0)}
                       </Text>
-                      <Text className="text-xs font-sans text-gray-400">
+                      <Text className="text-xs font-sans text-kumo-subtle">
                         COGS: {fmt(item.cogs || 0)}
                       </Text>
                       {marginPct > 0 && (
-                        <Text className="text-xs font-sans-semibold text-secondary">
+                        <Text className="text-xs font-sans-semibold text-kumo-success">
                           +{marginPct}%
                         </Text>
                       )}
@@ -358,7 +359,7 @@ export default function ProductsScreen() {
             />
 
             <View>
-              <Text className="text-sm font-sans-semibold text-gray-500 mb-2">
+              <Text className="text-sm font-sans-semibold text-kumo-subtle mb-2">
                 Kategori
               </Text>
               <ScrollView
@@ -370,7 +371,7 @@ export default function ProductsScreen() {
                   <Pressable
                     key={c.id}
                     className={`px-4 py-2 rounded-md ${
-                      form.categoryId === c.id ? "bg-primary" : "bg-muted"
+                      form.categoryId === c.id ? "bg-kumo-brand" : "bg-kumo-fill"
                     }`}
                     onPress={() =>
                       setForm({ ...form, categoryId: c.id })
@@ -379,8 +380,8 @@ export default function ProductsScreen() {
                     <Text
                       className={`text-sm font-sans-semibold ${
                         form.categoryId === c.id
-                          ? "text-white"
-                          : "text-gray-600"
+                          ? "text-kumo-inverse"
+                          : "text-kumo-subtle"
                       }`}
                     >
                       {c.name}
@@ -388,7 +389,7 @@ export default function ProductsScreen() {
                   </Pressable>
                 ))}
                 {categories.length === 0 && (
-                  <Text className="text-sm text-gray-400">
+                  <Text className="text-sm text-kumo-subtle">
                     Belum ada kategori. Buat dulu di bawah.
                   </Text>
                 )}
@@ -397,19 +398,19 @@ export default function ProductsScreen() {
 
             <Pressable
               className={`h-14 rounded-md items-center justify-center mt-2 ${
-                isSaving ? "bg-primary-600" : "bg-primary"
+                isSaving ? "bg-kumo-brand" : "bg-kumo-brand"
               }`}
               onPress={handleSave}
               disabled={isSaving}
             >
-              <Text className="text-lg font-sans-bold text-white">
+              <Text className="text-lg font-sans-semibold text-kumo-inverse">
                 {isSaving ? "Menyimpan..." : editingId ? "Update" : "Simpan"}
               </Text>
             </Pressable>
 
-            <View className="h-0.5 bg-muted my-4" />
+            <View className="h-0.5 bg-kumo-fill my-4" />
 
-            <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
+            <Text className="text-sm font-sans-semibold text-kumo-subtle  ">
               Tambah Kategori Baru
             </Text>
             <CategoryQuickAdd onCreated={() => loadCategories()} />
@@ -447,11 +448,11 @@ function Field({
   }
   return (
     <View>
-      <Text className="text-sm font-sans-semibold text-gray-500 mb-2">
+      <Text className="text-sm font-sans-semibold text-kumo-subtle mb-2">
         {label}
       </Text>
       <TextInput
-        className="h-12 border-2 border-muted rounded-md px-4 text-base font-sans text-foreground"
+        className="h-12 border border-kumo-line rounded-md px-4 text-base font-sans text-kumo-default"
         placeholder={placeholder}
         placeholderTextColor={Colors.gray[400]}
         value={value}
@@ -483,7 +484,7 @@ function CategoryQuickAdd({ onCreated }: { onCreated: () => void }) {
   return (
     <View className="flex-row gap-3">
       <TextInput
-        className="flex-1 h-12 border-2 border-muted rounded-md px-4 text-base font-sans text-foreground"
+        className="flex-1 h-12 border border-kumo-line rounded-md px-4 text-base font-sans text-kumo-default"
         placeholder="Nama kategori (contoh: Makanan)"
         placeholderTextColor={Colors.gray[400]}
         value={name}
@@ -491,12 +492,12 @@ function CategoryQuickAdd({ onCreated }: { onCreated: () => void }) {
       />
       <Pressable
         className={`h-12 rounded-md items-center justify-center px-6 ${
-          adding ? "bg-primary-600" : "bg-primary"
+          adding ? "bg-kumo-brand" : "bg-kumo-brand"
         }`}
         onPress={handleAdd}
         disabled={adding || !name.trim()}
       >
-        <Text className="text-sm font-sans-bold text-white">
+        <Text className="text-sm font-sans-semibold text-kumo-inverse">
           {adding ? "..." : "Tambah"}
         </Text>
       </Pressable>

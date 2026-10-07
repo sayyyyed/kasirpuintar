@@ -9,12 +9,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { UserPlus, CheckCircle, ChevronRight } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
-import { createEmployee, getEmployees } from "@/services/auth";
+import { createEmployee } from "@/services/auth";
 import SheetModal from "@/components/ui/SheetModal";
 import { Input } from "@/components/ui/Input";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import { usePayrollSettings } from "@/hooks/usePayrollSettings";
 import EmployeeDetail from "@/components/admin/EmployeeDetail";
+import { database } from "@/db";
+import { sanitizeCurrency } from "@/utils/currency";
+import { Q } from "@nozbe/watermelondb";
+import Button from "@/components/ui/Button";
 
 const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
@@ -24,6 +28,7 @@ type Employee = {
   email: string;
   role: "owner" | "cashier";
   active: boolean;
+  pin?: string;
   hourlyRate?: number;
 };
 
@@ -39,13 +44,18 @@ export default function EmployeesScreen() {
   const [createdPin, setCreatedPin] = useState<string | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
-  const loadEmployees = async () => {
-    const data = await getEmployees();
-    setEmployees(data as Employee[]);
-  };
-
   useEffect(() => {
-    loadEmployees();
+    const sub = database
+      .get("users")
+      .query(
+        Q.where("active", Q.eq(true)),
+        Q.where("deleted_at", Q.eq(null))
+      )
+      .observe()
+      .subscribe((records) => {
+        setEmployees(records as any as Employee[]);
+      });
+    return () => sub.unsubscribe();
   }, []);
 
   const openForm = () => {
@@ -73,10 +83,9 @@ export default function EmployeesScreen() {
         formName.trim(),
         formEmail.trim().toLowerCase(),
         formPin,
-        payrollEnabled && formRate ? Number(formRate) : undefined
+        payrollEnabled && formRate ? sanitizeCurrency(formRate) : undefined
       );
       setCreatedPin(formPin);
-      await loadEmployees();
     } catch (err: any) {
       Alert.alert("Gagal", err.message || "Gagal membuat karyawan");
     }
@@ -90,42 +99,43 @@ export default function EmployeesScreen() {
   const activeCount = employees.filter((e) => e.active).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-kumo-base">
       <View className="px-6 pt-6 pb-2 flex-row items-end justify-between">
         <View>
-          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle  ">
             Manajemen
           </Text>
           <Text
-            className="text-2xl font-sans-extrabold text-foreground mt-1"
-            style={{ letterSpacing: -0.5 }}
+            className="text-2xl font-sans-semibold text-kumo-default mt-1"
+
           >
             Karyawan
           </Text>
         </View>
-        <Pressable
-          className="bg-primary rounded-md px-4 py-3 flex-row items-center"
+        <Button
+          size="lg"
+          className="h-12 px-4"
+          icon={<UserPlus size={18} color="#FFFFFF" strokeWidth={2.5} />}
           onPress={openForm}
         >
-          <UserPlus size={18} color="#FFFFFF" strokeWidth={2.5} />
-          <Text className="text-sm font-sans-bold text-white ml-2">Tambah</Text>
-        </Pressable>
+          Tambah
+        </Button>
       </View>
 
       <View className="px-6 py-4 flex-row gap-3">
-        <View className="flex-1 bg-secondary-50 rounded-lg p-4">
-          <Text className="text-2xl font-sans-extrabold text-secondary">
+        <View className="flex-1 bg-kumo-success-tint rounded-lg p-4">
+          <Text className="text-2xl font-sans-semibold text-kumo-success">
             {activeCount}
           </Text>
-          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
+          <Text className="text-xs font-sans-semibold text-kumo-subtle   mt-1">
             Aktif
           </Text>
         </View>
-        <View className="flex-1 bg-muted rounded-lg p-4">
-          <Text className="text-2xl font-sans-extrabold text-foreground">
+        <View className="flex-1 bg-kumo-base border border-kumo-hairline rounded-lg p-4">
+          <Text className="text-2xl font-sans-semibold text-kumo-default">
             {employees.length}
           </Text>
-          <Text className="text-xs font-sans-semibold text-gray-500 uppercase tracking-wider mt-1">
+          <Text className="text-xs font-sans-semibold text-kumo-subtle   mt-1">
             Total Staf
           </Text>
         </View>
@@ -137,10 +147,10 @@ export default function EmployeesScreen() {
       >
         {employees.length === 0 && (
           <View className="items-center py-12">
-            <Text className="text-base font-sans-medium text-gray-400">
+            <Text className="text-base font-sans-medium text-kumo-subtle">
               Belum ada karyawan
             </Text>
-            <Text className="text-sm font-sans text-gray-400 mt-1">
+            <Text className="text-sm font-sans text-kumo-subtle mt-1">
               Tambah karyawan dengan tombol di atas
             </Text>
           </View>
@@ -151,28 +161,33 @@ export default function EmployeesScreen() {
           return (
             <Pressable
               key={item.id}
-              className="flex-row items-center py-4 border-b-2 border-muted active:bg-gray-50"
+              className="flex-row items-center py-4 border-b border-kumo-line active:bg-kumo-canvas"
               onPress={() => handleEmployeePress(item)}
             >
               <View
                 className={`w-12 h-12 rounded-full items-center justify-center ${
-                  isOwner ? "bg-primary-100" : item.active ? "bg-secondary-100" : "bg-gray-200"
+                  isOwner ? "bg-kumo-info-tint" : item.active ? "bg-kumo-success-tint" : "bg-kumo-fill"
                 }`}
               >
-                <Text className="text-lg font-sans-bold text-foreground">
+                <Text className="text-lg font-sans-semibold text-kumo-default">
                   {item.name.charAt(0)}
                 </Text>
               </View>
               <View className="ml-4 flex-1">
-                <Text className="text-base font-sans-bold text-foreground">
+                <Text className="text-base font-sans-semibold text-kumo-default">
                   {item.name}
                 </Text>
                 <View className="flex-row items-center gap-3 mt-0.5">
-                  <Text className="text-xs font-sans text-gray-500">
+                  <Text className="text-xs font-sans text-kumo-subtle">
                     {item.email}
                   </Text>
+                  {item.role !== "owner" && (
+                    <Text className="text-xs font-sans-semibold text-kumo-brand">
+                      PIN: {item.pin || "-"}
+                    </Text>
+                  )}
                   {payrollEnabled && item.hourlyRate != null && item.hourlyRate > 0 && (
-                    <Text className="text-xs font-sans-bold text-primary">
+                    <Text className="text-xs font-sans-semibold text-kumo-brand">
                       {fmt(item.hourlyRate)}/jam
                     </Text>
                   )}
@@ -180,12 +195,12 @@ export default function EmployeesScreen() {
               </View>
               <View
                 className={`px-3 py-1 rounded-full mr-2 ${
-                  isOwner ? "bg-primary-100" : "bg-muted"
+                  isOwner ? "bg-kumo-info-tint" : "bg-kumo-fill"
                 }`}
               >
                 <Text
-                  className={`text-xs font-sans-bold ${
-                    isOwner ? "text-primary" : "text-gray-500"
+                  className={`text-xs font-sans-semibold ${
+                    isOwner ? "text-kumo-brand" : "text-kumo-subtle"
                   }`}
                 >
                   {isOwner ? "Owner" : "Kasir"}
@@ -193,12 +208,12 @@ export default function EmployeesScreen() {
               </View>
               <View
                 className={`px-3 py-1 rounded-full mr-1 ${
-                  item.active ? "bg-secondary-100" : "bg-gray-200"
+                  item.active ? "bg-kumo-success-tint" : "bg-kumo-fill"
                 }`}
               >
                 <Text
-                  className={`text-xs font-sans-bold ${
-                    item.active ? "text-secondary" : "text-gray-500"
+                  className={`text-xs font-sans-semibold ${
+                    item.active ? "text-kumo-success" : "text-kumo-subtle"
                   }`}
                 >
                   {item.active ? "Aktif" : "Nonaktif"}
@@ -218,35 +233,36 @@ export default function EmployeesScreen() {
         <ScrollView keyboardShouldPersistTaps="handled">
           {createdPin ? (
             <View className="items-center py-8">
-              <View className="w-16 h-16 rounded-full bg-secondary-100 items-center justify-center mb-4">
+              <View className="w-16 h-16 rounded-full bg-kumo-success-tint items-center justify-center mb-4">
                 <CheckCircle size={36} color={Colors.secondary.DEFAULT} strokeWidth={2.5} />
               </View>
-              <Text className="text-xl font-sans-extrabold text-foreground text-center">
+              <Text className="text-xl font-sans-semibold text-kumo-default text-center">
                 Karyawan Berhasil Dibuat!
               </Text>
-              <Text className="text-sm font-sans text-gray-500 mt-2 text-center">
+              <Text className="text-sm font-sans text-kumo-subtle mt-2 text-center">
                 Berikan kredensial ini ke karyawan:
               </Text>
-              <View className="bg-muted rounded-lg p-5 mt-6 w-full">
-                <View className="flex-row items-center justify-between py-3 border-b-2 border-white/60">
-                  <Text className="text-sm font-sans-semibold text-gray-500 uppercase tracking-wider">Email</Text>
-                  <Text className="text-base font-sans-bold text-foreground">
+              <View className="bg-kumo-base border border-kumo-hairline rounded-lg p-5 mt-6 w-full">
+                <View className="flex-row items-center justify-between py-3 border-b border-kumo-inverse/60">
+                  <Text className="text-sm font-sans-semibold text-kumo-subtle  ">Email</Text>
+                  <Text className="text-base font-sans-semibold text-kumo-default">
                     {formEmail || "-"}
                   </Text>
                 </View>
                 <View className="flex-row items-center justify-between py-3">
-                  <Text className="text-sm font-sans-semibold text-gray-500 uppercase tracking-wider">PIN</Text>
-                  <Text className="text-2xl font-sans-extrabold text-primary tracking-widest">
+                  <Text className="text-sm font-sans-semibold text-kumo-subtle  ">PIN</Text>
+                  <Text className="text-2xl font-sans-semibold text-kumo-brand ">
                     {createdPin}
                   </Text>
                 </View>
               </View>
-              <Pressable
-                className="h-14 rounded-md bg-primary items-center justify-center mt-6 w-full"
+              <Button
+                fullWidth
+                className="mt-6"
                 onPress={() => setShowForm(false)}
               >
-                <Text className="text-lg font-sans-bold text-white">Selesai</Text>
-              </Pressable>
+                Selesai
+              </Button>
             </View>
           ) : (
             <View className="gap-4">
@@ -273,7 +289,7 @@ export default function EmployeesScreen() {
                 value={formPin}
                 onChangeText={setFormPin}
               />
-              <Text className="text-xs font-sans text-gray-400 -mt-2 px-1">
+              <Text className="text-xs font-sans text-kumo-subtle -mt-2 px-1">
                 PIN ini digunakan karyawan untuk login
               </Text>
 
@@ -286,17 +302,16 @@ export default function EmployeesScreen() {
                 />
               )}
 
-              <Pressable
-                className={`h-14 rounded-md items-center justify-center mt-2 ${
-                  isSubmitting ? "bg-primary-600" : "bg-primary"
-                }`}
+              <Button
+                fullWidth
+                size="lg"
+                className="h-14 mt-2 rounded-md"
+                textClassName="text-lg font-sans-semibold"
                 onPress={handleCreate}
-                disabled={isSubmitting}
+                loading={isSubmitting}
               >
-                <Text className="text-lg font-sans-bold text-white">
-                  {isSubmitting ? "Membuat..." : "Buat Karyawan"}
-                </Text>
-              </Pressable>
+                Simpan
+              </Button>
             </View>
           )}
         </ScrollView>
@@ -306,7 +321,6 @@ export default function EmployeesScreen() {
         visible={!!selectedEmployee}
         employee={selectedEmployee}
         onClose={() => setSelectedEmployee(null)}
-        onUpdate={() => loadEmployees()}
       />
     </SafeAreaView>
   );

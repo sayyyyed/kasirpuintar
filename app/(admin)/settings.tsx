@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, Pressable, ScrollView, Switch, Alert } from "react-native";
+import { View, Text, Pressable, ScrollView, Switch, Alert, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -19,10 +19,18 @@ import {
 } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
-import { syncAll, startAutoSync, stopAutoSync } from "@/services/sync";
+import {
+  getSyncSettings,
+  setAutoSyncEnabled,
+  setOfflineModeEnabled,
+  syncAll,
+  startAutoSync,
+  stopAutoSync,
+} from "@/services/sync";
 import { useAuth } from "@/hooks/useAuth";
 import { usePayrollSettings } from "@/hooks/usePayrollSettings";
 import { database } from "@/db";
+import { getAppSettings, saveAppSettings, type AppSettings } from "@/services/appSettings";
 
 type SettingItemProps = {
   icon: React.ReactNode;
@@ -47,15 +55,15 @@ function SettingItem({
 }: SettingItemProps) {
   return (
     <Pressable
-      className="flex-row items-center py-4 border-b-2 border-muted"
+      className="flex-row items-center py-4 border-b border-kumo-line"
       onPress={onPress}
     >
       <View className={`w-12 h-12 rounded-lg items-center justify-center ${iconBg}`}>
         {icon}
       </View>
       <View className="ml-4 flex-1">
-        <Text className="text-base font-sans-bold text-foreground">{title}</Text>
-        <Text className="text-xs font-sans text-gray-500 mt-0.5">{subtitle}</Text>
+        <Text className="text-base font-sans-semibold text-kumo-default">{title}</Text>
+        <Text className="text-xs font-sans text-kumo-subtle mt-0.5">{subtitle}</Text>
       </View>
       {onToggle !== undefined ? (
         <Switch
@@ -79,18 +87,45 @@ export default function SettingsScreen() {
   const [offlineMode, setOfflineMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const { enabled: payrollEnabled, toggle: togglePayroll } = usePayrollSettings();
 
+  React.useEffect(() => {
+    getSyncSettings().then(({ autoSync: storedAutoSync, offlineMode: storedOfflineMode }) => {
+      setAutoSync(storedAutoSync);
+      setOfflineMode(storedOfflineMode);
+    });
+  }, []);
+
+  React.useEffect(() => {
+    getAppSettings().then(setAppSettings);
+  }, []);
+
   const toggleAutoSync = useCallback(
-    (value: boolean) => {
+    async (value: boolean) => {
       setAutoSync(value);
+      await setAutoSyncEnabled(value);
       if (value) {
-        startAutoSync();
+        if (!offlineMode) startAutoSync();
       } else {
         stopAutoSync();
       }
     },
-    []
+    [offlineMode]
+  );
+
+  const toggleOfflineMode = useCallback(
+    async (value: boolean) => {
+      setOfflineMode(value);
+      await setOfflineModeEnabled(value);
+      if (value) {
+        stopAutoSync();
+      } else if (autoSync) {
+        startAutoSync();
+        await syncAll();
+      }
+    },
+    [autoSync]
   );
 
   const handleSyncNow = useCallback(async () => {
@@ -141,61 +176,79 @@ export default function SettingsScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-kumo-base">
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
         {/* Header */}
         <View className="px-6 pt-6 pb-4">
-          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle  ">
             Konfigurasi
           </Text>
           <Text
-            className="text-2xl font-sans-extrabold text-foreground mt-1"
-            style={{ letterSpacing: -0.5 }}
+            className="text-2xl font-sans-semibold text-kumo-default mt-1"
+
           >
             Pengaturan
           </Text>
         </View>
 
+        {appSettings && (
+          <View className="px-6 mb-6">
+            <Text className="text-sm font-sans-semibold text-kumo-subtle mb-3">Tampilan</Text>
+            <View className="bg-kumo-base border border-kumo-hairline rounded-lg px-4">
+              <View className="py-4 border-b border-kumo-line">
+                <Text className="text-base font-sans-semibold text-kumo-default mb-2">Nama toko</Text>
+                <TextInput
+                  className="bg-kumo-control border border-kumo-line rounded-lg px-3 h-11 text-base text-kumo-default font-sans"
+                  value={appSettings.storeName}
+                  onChangeText={(storeName) => setAppSettings({ ...appSettings, storeName })}
+                  onBlur={() => saveAppSettings(appSettings)}
+                  placeholder="Nama toko"
+                />
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Printer Section */}
         <View className="px-6 mb-6">
-          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-3">
             Printer
           </Text>
-          <View className="bg-muted rounded-lg p-4">
+          <Pressable className="bg-kumo-base border border-kumo-hairline rounded-lg p-4" onPress={() => router.push("/printer-settings")}>
             <View className="flex-row items-center justify-between mb-4">
               <View className="flex-row items-center">
-                <View className="w-12 h-12 rounded-full bg-primary-100 items-center justify-center">
+                <View className="w-12 h-12 rounded-full bg-kumo-info-tint items-center justify-center">
                   <Printer size={22} color={Colors.primary.DEFAULT} strokeWidth={2.5} />
                 </View>
                 <View className="ml-4">
-                  <Text className="text-base font-sans-bold text-foreground">
+                  <Text className="text-base font-sans-semibold text-kumo-default">
                     Printer Thermal
                   </Text>
-                  <Text className="text-xs font-sans text-gray-500">
-                    Bluetooth · Terhubung
+                  <Text className="text-xs font-sans text-kumo-subtle">
+                    Atur koneksi, layout, dan ukuran struk
                   </Text>
                 </View>
               </View>
-              <View className="px-3 py-1 bg-secondary-100 rounded-full">
-                <Text className="text-xs font-sans-bold text-secondary">Aktif</Text>
+              <View className="px-3 py-1 bg-kumo-success-tint rounded-full">
+                <Text className="text-xs font-sans-semibold text-kumo-success">Siap</Text>
               </View>
             </View>
-            <Pressable className="h-12 rounded-md bg-primary items-center justify-center">
-              <Text className="text-base font-sans-bold text-white">Test Print</Text>
-            </Pressable>
-          </View>
+            <View className="h-12 rounded-md bg-kumo-brand items-center justify-center">
+              <Text className="text-base font-sans-semibold text-kumo-inverse">Atur Printer</Text>
+            </View>
+          </Pressable>
         </View>
 
         {/* Sync Section */}
         <View className="px-6 mb-6">
-          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-3">
             Sinkronisasi
           </Text>
 
-          <View className="bg-muted rounded-lg p-4 mb-3">
+          <View className="bg-kumo-base border border-kumo-hairline rounded-lg p-4 mb-3">
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">
-                <View className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center">
+                <View className="w-10 h-10 rounded-full bg-kumo-info-tint items-center justify-center">
                   {isOnline ? (
                     <Cloud size={20} color={Colors.primary.DEFAULT} strokeWidth={2.5} />
                   ) : (
@@ -203,17 +256,17 @@ export default function SettingsScreen() {
                   )}
                 </View>
                 <View className="ml-3">
-                  <Text className="text-sm font-sans-bold text-foreground">
+                  <Text className="text-sm font-sans-semibold text-kumo-default">
                     {isOnline ? "Online" : "Offline"}
                   </Text>
-                  <Text className="text-xs font-sans text-gray-500">
+                  <Text className="text-xs font-sans text-kumo-subtle">
                     Sync terakhir: {lastSyncFormatted}
                   </Text>
                 </View>
               </View>
               {outboxPending > 0 && (
-                <View className="px-2 py-1 bg-accent-100 rounded-full">
-                  <Text className="text-xs font-sans-bold text-accent-600">
+                <View className="px-2 py-1 bg-kumo-warning-tint rounded-full">
+                  <Text className="text-xs font-sans-semibold text-kumo-warning">
                     {outboxPending} pending
                   </Text>
                 </View>
@@ -222,7 +275,7 @@ export default function SettingsScreen() {
 
             <Pressable
               className={`h-12 rounded-md items-center justify-center flex-row gap-2 ${
-                isSyncing ? "bg-gray-300" : "bg-primary"
+                isSyncing ? "bg-kumo-fill" : "bg-kumo-brand"
               }`}
               onPress={handleSyncNow}
               disabled={isSyncing || !isOnline}
@@ -233,28 +286,28 @@ export default function SettingsScreen() {
                 strokeWidth={2.5}
                 className={isSyncing ? "animate-spin" : ""}
               />
-              <Text className="text-base font-sans-bold text-white">
+              <Text className="text-base font-sans-semibold text-kumo-inverse">
                 {isSyncing ? "Syncing..." : "Sync Sekarang"}
               </Text>
             </Pressable>
 
             {outboxPending > 0 && (
               <Pressable
-                className="h-12 rounded-md items-center justify-center flex-row gap-2 mt-3 border-2 border-red-400"
+                className="h-12 rounded-md items-center justify-center flex-row gap-2 mt-3 border border-kumo-danger"
                 onPress={handlePurgeOutbox}
               >
                 <Trash2 size={18} color="#EF4444" strokeWidth={2.5} />
-                <Text className="text-base font-sans-bold text-red-500">
+                <Text className="text-base font-sans-semibold text-kumo-danger">
                   Bersihkan Outbox ({outboxPending})
                 </Text>
               </Pressable>
             )}
           </View>
 
-          <View className="bg-muted rounded-lg px-4">
+          <View className="bg-kumo-base border border-kumo-hairline rounded-lg px-4">
             <SettingItem
               icon={<Cloud size={20} color={Colors.primary.DEFAULT} strokeWidth={2} />}
-              iconBg="bg-primary-100"
+              iconBg="bg-kumo-info-tint"
               title="Auto-Sync"
               subtitle="Sinkronisasi otomatis ke cloud"
               value={autoSync}
@@ -262,24 +315,24 @@ export default function SettingsScreen() {
             />
             <SettingItem
               icon={<Wifi size={20} color={Colors.accent.DEFAULT} strokeWidth={2} />}
-              iconBg="bg-accent-100"
+              iconBg="bg-kumo-warning-tint"
               title="Mode Offline"
               subtitle="Kerja tanpa koneksi internet"
               value={offlineMode}
-              onToggle={setOfflineMode}
+              onToggle={toggleOfflineMode}
             />
           </View>
         </View>
 
         {/* Notifications Section */}
         <View className="px-6 mb-6">
-          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-3">
             Notifikasi
           </Text>
-          <View className="bg-muted rounded-lg px-4">
+          <View className="bg-kumo-base border border-kumo-hairline rounded-lg px-4">
             <SettingItem
               icon={<Bell size={20} color={Colors.primary.DEFAULT} strokeWidth={2} />}
-              iconBg="bg-primary-100"
+              iconBg="bg-kumo-info-tint"
               title="Push Notifikasi"
               subtitle="Terima notifikasi transaksi"
               value={notifications}
@@ -287,7 +340,7 @@ export default function SettingsScreen() {
             />
             <SettingItem
               icon={<Smartphone size={20} color={Colors.accent.DEFAULT} strokeWidth={2} />}
-              iconBg="bg-accent-100"
+              iconBg="bg-kumo-warning-tint"
               title="Stok Rendah"
               subtitle="Peringatan stok hampir habis"
               value={true}
@@ -298,13 +351,13 @@ export default function SettingsScreen() {
 
         {/* Keuangan Section */}
         <View className="px-6 mb-6">
-          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-3">
             Keuangan
           </Text>
-          <View className="bg-muted rounded-lg px-4">
+          <View className="bg-kumo-base border border-kumo-hairline rounded-lg px-4">
             <SettingItem
               icon={<DollarSign size={20} color={Colors.secondary.DEFAULT} strokeWidth={2} />}
-              iconBg="bg-secondary-100"
+              iconBg="bg-kumo-success-tint"
               title="Sistem Upah"
               subtitle="Hitung gaji karyawan berdasarkan jam kerja"
               value={payrollEnabled}
@@ -315,13 +368,13 @@ export default function SettingsScreen() {
 
         {/* Security Section */}
         <View className="px-6 mb-6">
-          <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-3">
             Keamanan
           </Text>
-          <View className="bg-muted rounded-lg px-4">
+          <View className="bg-kumo-base border border-kumo-hairline rounded-lg px-4">
             <SettingItem
               icon={<Shield size={20} color={Colors.secondary.DEFAULT} strokeWidth={2} />}
-              iconBg="bg-secondary-100"
+              iconBg="bg-kumo-success-tint"
               title="Ubah Password"
               subtitle="Perbarui kata sandi akun"
               onPress={() => {}}
@@ -332,22 +385,22 @@ export default function SettingsScreen() {
 
         {/* App Info */}
         <View className="px-6">
-          <View className="bg-muted rounded-lg p-4 items-center mb-6">
-            <Text className="text-2xl font-sans-extrabold text-foreground">
-              KasirPuintar
+          <View className="bg-kumo-base border border-kumo-hairline rounded-lg p-4 items-center mb-6">
+            <Text className="text-2xl font-sans-semibold text-kumo-default">
+              KasirKasiran
             </Text>
-            <Text className="text-sm font-sans text-gray-500 mt-1">Versi 1.0.0</Text>
-            <Text className="text-xs font-sans text-gray-400 mt-2 text-center">
-              © 2026 KasirPuintar. All rights reserved.
+            <Text className="text-sm font-sans text-kumo-subtle mt-1">Versi 1.0.0</Text>
+            <Text className="text-xs font-sans text-kumo-subtle mt-2 text-center">
+              © 2026 KasirKasiran. All rights reserved.
             </Text>
           </View>
 
           <Pressable
-            className="h-14 rounded-md items-center justify-center border-4 border-red-500 flex-row mb-8"
+            className="h-14 rounded-md items-center justify-center border border-kumo-danger flex-row mb-8"
             onPress={handleLogout}
           >
             <LogOut size={20} color="#EF4444" strokeWidth={2.5} />
-            <Text className="ml-2 text-base font-sans-bold text-red-500">
+            <Text className="ml-2 text-base font-sans-semibold text-kumo-danger">
               Keluar
             </Text>
           </Pressable>

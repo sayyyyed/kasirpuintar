@@ -14,7 +14,7 @@ import "react-native-reanimated";
 
 import "../global.css";
 import { database, ensureTables } from "@/db";
-import { startAutoSync, stopAutoSync, syncAll } from "@/services/sync";
+import { loadSyncSettings, startAutoSync, stopAutoSync, syncAll } from "@/services/sync";
 import { PayrollProvider } from "@/hooks/usePayrollSettings";
 
 export { ErrorBoundary } from "expo-router";
@@ -41,6 +41,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       ensureTables()
+        .then(() => loadSyncSettings())
         .then(() => syncAll())
         .catch(() => {})
         .finally(() => {
@@ -60,12 +61,13 @@ export default function RootLayout() {
 
   return (
     <PayrollProvider>
-      <StatusBar style="dark" />
+      <StatusBar style="dark" backgroundColor="#FAFAFA" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(employee)" />
         <Stack.Screen name="(admin)" />
+        <Stack.Screen name="printer-settings" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </PayrollProvider>
