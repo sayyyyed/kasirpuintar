@@ -16,27 +16,27 @@ export default function IndexScreen() {
         router.replace("/(auth)/login");
       }
     }
-  }, [isLoading, user]);
+  }, [isLoading, user, redirectPath]);
 
   return (
-    <View className="flex-1 bg-primary items-center justify-center">
-      <View className="absolute top-20 right-0 w-40 h-40 rounded-full bg-white opacity-5 -translate-x-10" />
-      <View className="absolute bottom-32 left-0 w-28 h-28 rounded-lg bg-white opacity-5 translate-x-5 rotate-45" />
+    <View className="flex-1 bg-kumo-brand items-center justify-center">
+      <View className="absolute top-20 right-0 w-40 h-40 rounded-full bg-kumo-base opacity-5 -translate-x-10" />
+      <View className="absolute bottom-32 left-0 w-28 h-28 rounded-lg bg-kumo-base opacity-5 translate-x-5 rotate-45" />
       <View className="items-center">
         <Text
-          className="text-5xl font-sans-extrabold text-white mb-4"
-          style={{ letterSpacing: -1.5 }}
+          className="text-5xl font-sans-semibold text-kumo-inverse mb-4"
+
         >
           Kasir
         </Text>
         <Text
-          className="text-4xl font-sans-extrabold text-white opacity-80 mb-12"
-          style={{ letterSpacing: -1 }}
+          className="text-4xl font-sans-semibold text-kumo-inverse opacity-80 mb-12"
+
         >
-          Puintar
+          Kasiran
         </Text>
         <ActivityIndicator size="large" color="#FFFFFF" />
-        <Text className="text-sm font-sans-medium text-white opacity-60 mt-6">
+        <Text className="text-sm font-sans-medium text-kumo-inverse opacity-60 mt-6">
           Memuat...
         </Text>
       </View>

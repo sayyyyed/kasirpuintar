@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import {
   View,
   Text,
+  ActivityIndicator,
   Pressable,
   TextInput as RNTextInput,
   KeyboardAvoidingView,
@@ -14,6 +15,7 @@ import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/hooks/useAuth";
 
 const BOX_COUNT = 6;
+const MIN_PIN_LENGTH = BOX_COUNT;
 
 function parseDigits(text: string): string[] {
   const nums = text.replace(/[^0-9]/g, "").split("").slice(0, BOX_COUNT);
@@ -26,7 +28,7 @@ function parseDigits(text: string): string[] {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, redirectPath } = useAuth();
+  const { login } = useAuth();
   const [rawInput, setRawInput] = useState("");
   const [digits, setDigits] = useState<string[]>(Array(BOX_COUNT).fill(""));
   const [isLoading, setIsLoading] = useState(false);
@@ -42,22 +44,20 @@ export default function LoginScreen() {
     setDigits(parsed);
 
     const pin = parsed.filter((d) => d !== "").join("");
-    if (pin.length < 6) return;
+    if (pin.length < MIN_PIN_LENGTH) return;
 
-    const firstEmpty = parsed.findIndex((d) => d === "");
-    const consecutive = firstEmpty === -1 || firstEmpty >= pin.length;
-
-    if (consecutive) {
+    if (pin.length === BOX_COUNT) {
       submittingRef.current = true;
       submitPin(pin);
     }
   };
 
   const submitPin = async (pin: string) => {
-    if (pin.length < 6) return;
+    if (pin.length < MIN_PIN_LENGTH || isLoading) return;
+    submittingRef.current = true;
     setErrorMsg("");
     setIsLoading(true);
-    const { error } = await login(pin);
+    const { error, redirectPath: target } = await login(pin);
     setIsLoading(false);
     if (error) {
       setErrorMsg(error.message || "PIN salah");
@@ -65,44 +65,45 @@ export default function LoginScreen() {
       setDigits(Array(BOX_COUNT).fill(""));
       submittingRef.current = false;
       setTimeout(() => inputRef.current?.focus(), 100);
-    } else if (redirectPath) {
-      router.replace(redirectPath as any);
+    } else if (target) {
+      router.replace(target as any);
     }
   };
 
   const rawPin = digits.filter((d) => d !== "").join("");
 
+  const pinReady = rawPin.length >= MIN_PIN_LENGTH;
+  const buttonBg = isLoading
+    ? "#005EE6"
+    : pinReady
+    ? Colors.primary.DEFAULT
+    : "#F3F3F3";
+  const showButtonShadow = pinReady || isLoading;
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-kumo-recessed">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <Pressable className="flex-1 justify-center px-8" onPress={() => inputRef.current?.focus()}>
-          {/* Decorative shapes */}
-          <View className="absolute top-16 right-[-40px] w-32 h-32 rounded-full bg-primary-100 opacity-40" />
-          <View className="absolute top-40 left-[-20px] w-20 h-20 rounded-lg bg-secondary-100 opacity-40 rotate-45" />
-          <View className="absolute bottom-32 left-8 w-16 h-16 rounded-full bg-accent-100 opacity-30" />
-
+        <Pressable className="flex-1 items-center justify-center px-4 py-8" onPress={() => inputRef.current?.focus()}>
+          <View className="w-full max-w-sm">
           {/* Logo */}
-          <View className="items-center mb-10">
+          <View className="items-center mb-6">
             <Image
               source={require("@/assets/images/logowarung.png")}
-              style={{ width: 96, height: 96, borderRadius: 16 }}
+              style={{ width: 64, height: 64, borderRadius: 8 }}
               resizeMode="contain"
             />
-            <View style={{ height: 24 }} />
-            <Text
-              className="text-4xl text-foreground font-sans-extrabold"
-              style={{ letterSpacing: -0.8 }}
-            >
+            <Text className="text-lg text-kumo-strong font-sans mt-3">
               KasirPuintar
             </Text>
-            <Text className="text-base text-gray-500 font-sans mt-2">
+            <Text className="text-sm text-kumo-subtle font-sans mt-1">
               Masukkan PIN untuk melanjutkan
             </Text>
           </View>
 
+          <View className="rounded-lg bg-kumo-base p-6 shadow-kumo">
           {/* PIN Boxes */}
           <View
             className="flex-row justify-center gap-3 mb-8"
@@ -110,17 +111,17 @@ export default function LoginScreen() {
             {digits.map((digit, i) => (
               <View
                 key={i}
-                className={`w-14 h-16 rounded-lg items-center justify-center border-2 transition-all duration-200 ${
+                className={`w-12 h-12 rounded-lg items-center justify-center border ${
                   digit !== ""
-                    ? "border-primary bg-primary-50"
+                    ? "border-kumo-brand bg-kumo-info-tint"
                     : errorMsg !== ""
-                    ? "border-red-400 bg-red-50"
+                    ? "border-kumo-danger bg-kumo-danger-tint"
                     : i === digits.findIndex((d) => d === "")
-                    ? "border-primary-300 bg-white"
-                    : "border-muted bg-muted"
+                    ? "border-kumo-brand bg-kumo-base"
+                    : "border-kumo-line bg-kumo-fill"
                 }`}
               >
-                <Text className="text-2xl font-sans-extrabold text-foreground">
+                <Text className="text-xl font-sans-semibold text-kumo-default">
                   {digit !== "" ? "●" : ""}
                 </Text>
               </View>
@@ -140,33 +141,49 @@ export default function LoginScreen() {
 
           {/* Error */}
           {errorMsg !== "" && (
-            <Text className="text-sm text-red-500 font-sans-medium text-center mb-6">
+            <Text className="text-sm text-kumo-danger font-sans-medium text-center mb-6">
               {errorMsg}
             </Text>
           )}
 
           {/* Confirm Button */}
           <Pressable
-            className={`h-14 rounded-md items-center justify-center transition-all duration-200 ${
-              rawPin.length >= 6 && !isLoading
-                ? "bg-primary active:bg-primary-600"
-                : "bg-gray-200"
-            }`}
+            className="h-14 rounded-lg items-center justify-center flex-row"
+            style={[
+              { backgroundColor: buttonBg },
+              showButtonShadow
+                ? {
+                    borderWidth: 1,
+                    borderColor: "#1741B8",
+                    shadowColor: "#000000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 2,
+                    elevation: 2,
+                  }
+                : null,
+            ]}
             onPress={() => submitPin(rawPin)}
-            disabled={rawPin.length < 6 || isLoading}
+            disabled={!pinReady || isLoading}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !pinReady || isLoading, busy: isLoading }}
           >
+            {isLoading && <ActivityIndicator color="#FFFFFF" size="small" />}
             <Text
-              className={`text-lg font-sans-bold ${
-                rawPin.length >= 6 ? "text-white" : "text-gray-400"
+              className={`text-base font-sans-semibold ${isLoading ? "ml-2" : ""} ${
+                rawPin.length >= MIN_PIN_LENGTH || isLoading ? "text-kumo-inverse" : "text-kumo-subtle"
               }`}
             >
               {isLoading ? "Memeriksa..." : "Masuk"}
             </Text>
           </Pressable>
 
-          <Text className="text-xs font-sans text-gray-400 text-center mt-6">
+          </View>
+
+          <Text className="text-xs font-sans text-kumo-subtle text-center mt-5">
             PIN dibuat oleh pemilik toko
           </Text>
+          </View>
         </Pressable>
       </KeyboardAvoidingView>
     </SafeAreaView>
