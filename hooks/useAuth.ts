@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import { supabase } from "@/services/supabase";
 import { signInWithPin } from "@/services/auth";
+import { syncAllDetailed } from "@/services/sync";
 
 export type AuthUser = {
   id: string;
@@ -13,10 +13,15 @@ export type AuthUser = {
 
 const SESSION_KEY = "user_session_v2";
 
+function redirectFor(user: AuthUser | null): string | null {
+  if (user?.role === "owner") return "/(admin)/analytics";
+  if (user?.role === "cashier") return "/(employee)/dashboard";
+  return null;
+}
+
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
   const userRef = useRef<AuthUser | null>(null);
 
   useEffect(() => {
@@ -31,7 +36,6 @@ export function useAuth() {
       if (event === "SIGNED_OUT" || (!session && userRef.current)) {
         setUser(null);
         AsyncStorage.removeItem(SESSION_KEY);
-        router.replace("/(auth)/login");
       }
     });
     return () => listener.subscription.unsubscribe();
@@ -54,10 +58,23 @@ export function useAuth() {
     if (error || !data?.user) {
       return { error };
     }
+
+    // Kegagalan push (upload) tidak menghalangi login; hanya kegagalan pull
+    // (unduh data) yang dianggap fatal karena data lokal belum lengkap.
+    const { pullFailed } = await syncAllDetailed();
+    if (pullFailed > 0) {
+      return {
+        data: null,
+        error: new Error(
+          "Login berhasil, tetapi data belum selesai diunduh. Periksa koneksi lalu coba lagi."
+        ),
+      };
+    }
+
     const sessionData = { ...data.user };
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
     setUser(sessionData);
-    return { error: null };
+    return { error: null, redirectPath: redirectFor(sessionData) };
   }, []);
 
   const signOut = useCallback(async () => {
@@ -70,12 +87,7 @@ export function useAuth() {
     await AsyncStorage.removeItem(SESSION_KEY);
   }, []);
 
-  const redirectPath =
-    user?.role === "owner"
-      ? "/(admin)/analytics"
-      : user?.role === "cashier"
-      ? "/(employee)/dashboard"
-      : null;
+  const redirectPath = redirectFor(user);
 
   return { user, isLoading, login, signOut, redirectPath };
 }
