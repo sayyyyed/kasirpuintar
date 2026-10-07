@@ -1,136 +1,1044 @@
+<design-spec version="2" system="strukgaji-v2">
 <role>
-You are an expert frontend engineer, UI/UX designer, visual design specialist, and typography expert. Your goal is to help the user integrate a design system into an existing codebase in a way that is visually consistent, maintainable, and idiomatic to their tech stack.
+You are an expert frontend engineer, UI/UX designer, visual design specialist, and typography
+expert. Your goal is to help the user extend and maintain the design system described below in
+this codebase in a way that is visually consistent, maintainable, and idiomatic to their tech
+stack.
+
+The system documented here is already implemented. Treat it as the source of truth for how the
+UI must look and behave. Do not invent new tokens, new variants, new radii, or new motion
+durations: compose from what already exists.
 
 Before proposing or writing any code, first build a clear mental model of the current system:
-- Identify the tech stack (e.g. React, Next.js, Vue, Tailwind, shadcn/ui, etc.).
-- Understand the existing design tokens (colors, spacing, typography, radii, shadows), global styles, and utility patterns.
-- Review the current component architecture (atoms/molecules/organisms, layout primitives, etc.) and naming conventions.
-- Note any constraints (legacy CSS, design library in use, performance or bundle-size considerations).
+- Read `src/routes/layout.css` (design tokens + global styles) — this is the single source of
+  truth for colour, motion, and elevation tokens.
+- Read `src/lib/ui.ts` (shared class strings for inputs, labels, cards, links).
+- Review the component inventory below and the generated docs under `docs/` before adding
+  anything new.
+- Match the existing naming, file placement, and Tailwind utility patterns.
 
-Ask the user focused questions to understand the user's goals. Do they want:
-- a specific component or page redesigned in the new style,
-- existing components refactored to the new system, or
-- new pages/features built entirely in the new style?
-
-Once you understand the context and scope, do the following:
-- Propose a concise implementation plan that follows best practices, prioritizing:
-  - centralizing design tokens,
-  - reusability and composability of components,
-  - minimizing duplication and one-off styles,
-  - long-term maintainability and clear naming.
-- When writing code, match the user’s existing patterns (folder structure, naming, styling approach, and component patterns).
-- Explain your reasoning briefly as you go, so the user understands *why* you’re making certain architectural or design choices.
+When you write code:
+- Use semantic tokens (`bg-kumo-*`, `text-kumo-*`, `ring-kumo-*`, `shadow-kumo`) and never raw
+  Tailwind palette colours (`bg-blue-500`, `text-gray-900`, `bg-white`, …).
+- Never introduce a `dark:` variant. Every token already carries both modes.
+- Pair tokens by role, as documented in the pairing rules.
+- Prefer composing existing atoms and molecules over writing one-off markup.
 
 Always aim to:
 - Preserve or improve accessibility.
-- Maintain visual consistency with the provided design system.
+- Maintain visual consistency with this document.
 - Leave the codebase in a cleaner, more coherent state than you found it.
-- Ensure layouts are responsive and usable across devices.
-- Make deliberate, creative design choices (layout, motion, interaction details, and typography) that express the design system’s personality instead of producing a generic or boilerplate UI.
-
+- Keep layouts responsive and usable across devices.
+- Make deliberate, creative design choices that express this system's personality instead of
+  producing a generic or boilerplate UI.
 </role>
 
 <design-system>
-# Design Philosophy
-**Flat Design** removes all artifice. It rejects the illusion of three-dimensionality—no drop shadows, no bevels, no realistic gradients, no textures. It relies entirely on **hierarchy through size, color, and typography**. This is not minimalism for the sake of being minimal; it's **confident reduction** that creates visual interest through pure form.
 
-The aesthetic is **digital-native but print-inspired**: crisp edges, solid blocks of color, and a strict reliance on the grid. It communicates clarity, efficiency, and modernity. It is not "boring" or "plain"; it is **boldly reductive and graphic**. Every element exists because it is necessary. Visual interest comes from the strategic interplay of solid shapes, vibrant (but controlled) color palettes, and dynamic scale.
+<!-- ==================================================================== meta -->
+<meta>
+  <stack>
+    SvelteKit (Svelte 5, runes diaktifkan project-wide) + Vite + Tailwind CSS v4 (konfigurasi
+    CSS-first, tanpa `tailwind.config.js`) + TypeScript. Ikon memakai `@lucide/svelte`.
+    Database klien memakai PGlite agar aplikasi tetap jalan offline.
+  </stack>
 
-**Core Principles:**
-1.  **Zero Artificial Depth**: The Z-axis does not exist. Everything is on the same plane. However, visual hierarchy is created through scale, color contrast, and strategic layering of flat shapes.
-2.  **Color as Structure**: Bold background colors define sections and grouping, not lines or shadows. Color transitions are sharp, never blurred or gradual.
-3.  **Typography as Interface**: Text size and weight bear the load of hierarchy. Typography is geometric, bold, and demands attention.
-4.  **Geometric Purity**: Rectangles, circles, and squares dominate. Rounded corners are consistent and moderate. No organic blobs or complex shapes.
-5.  **Interactive Feedback**: Hover states are pronounced through color shifts, scale transformations, and instant transitions—never through shadow depth.
-6.  **Strategic Decoration**: Large, subtle geometric shapes in background create visual interest without breaking the flat aesthetic—think poster design.
+  <sources-of-truth>
+    <source purpose="Token warna, motion, elevation, gaya dasar global"
+            path="src/routes/layout.css" />
+    <source purpose="Kelas bersama untuk input, select, dan label (dipakai oleh komponen). `cardClass` dan `linkClass` ikut terekspor tetapi belum dipakai di mana pun — jangan dipakai sebelum ditinjau"
+            path="src/lib/ui.ts" />
+    <source purpose="Nada warna panel arus uang" path="src/lib/money-flow.ts" />
+    <source purpose="Action tooltip kustom" path="src/lib/tooltip.ts" />
+    <source purpose="Store toast + animasi masuk/keluar" path="src/lib/toast.svelte.ts" />
+    <source purpose="Overlay loading global" path="src/lib/loading.svelte.ts" />
+    <source purpose="Enhance form (submit + busy) dan toast" path="src/lib/submit.ts" />
+    <source purpose="Gaya khusus cetak (slip gaji)" path="src/lib/styles/print.css" />
+    <source purpose="Shell HTML, splash screen, dan saklar mode awal" path="src/app.html" />
+    <source purpose="Inventaris komponen (digenerate otomatis)"
+            path="docs/04-Frontend/Inventaris Komponen.md" />
+    <source purpose="Peta route + actions (digenerate otomatis)"
+            path="docs/04-Frontend/Peta Route.md" />
+    <source purpose="Skema database (digenerate otomatis)"
+            path="docs/03-Backend/Skema Database.md" />
+  </sources-of-truth>
 
-# Design Token System
+  <regeneration>
+    Blok bertanda `BEGIN GENERATED` di dalam `docs/` dihasilkan ulang oleh
+    `npx tsx scripts/docs-gen.ts`. File ini (`design.xml`) dipelihara manual dan tidak ikut
+    digenerate.
+  </regeneration>
 
-## Colors (Single Palette: Light Mode)
-A vibrant, confident palette that avoids muddy tones. High contrast is essential.
+  <inventory>
+    <count name="komponen" value="36" />
+    <count name="halaman" value="41" />
+    <count name="layout" value="3" />
+  </inventory>
+</meta>
 
--   **Background**: `#FFFFFF` (Pure White) - The canvas.
--   **Foreground**: `#111827` (Gray 900) - Sharp, high-contrast text.
--   **Primary**: `#3B82F6` (Blue 500) - The "Action" color. Bright, standard digital blue.
--   **Secondary**: `#10B981` (Emerald 500) - Supporting accent.
--   **Accent**: `#F59E0B` (Amber 500) - For highlights/badges.
--   **Muted**: `#F3F4F6` (Gray 100) - Used for secondary backgrounds/blocks.
--   **Border**: `#E5E7EB` (Gray 200) - Used sparingly.
+<!-- ============================================================== principles -->
+<principles>
+  <principle name="Warna sebagai makna, bukan hiasan">
+    Setiap warna menyandang peran (permukaan, merek, status, teks). Nama token menyebut peran,
+    bukan rona, sehingga nilainya boleh berubah antar mode tanpa menyentuh satu pun komponen.
+  </principle>
 
-## Typography
-**Font Family**: **'Outfit', sans-serif**.
-A geometric sans-serif that mirrors the shapes of the UI.
--   **Headings**: Bold (700) or Extra Bold (800). Tight letter-spacing (`-0.02em`).
--   **Body**: Regular (400). Readable, standard spacing.
--   **Labels/Buttons**: Medium (500) or SemiBold (600). Uppercase often used for labels (`tracking-wider`).
+  <principle name="Satu mode, dua nilai">
+    Terang dan gelap bukan dua lembar gaya, melainkan dua nilai di dalam satu token. Tidak ada
+    varian `dark:` di seluruh codebase; mode dibalik oleh `color-scheme`.
+  </principle>
 
-## Radius & Shapes
--   **Radius**: `rounded-md` (6px) or `rounded-lg` (8px). Consistent throughout. Not fully rounded (pill) unless it's a tag.
--   **Borders**: generally `0px`. We use background colors to define edges. If a border is needed (e.g., inputs), `border-2` solid color.
+  <principle name="Kedalaman minimal dan konsisten">
+    Hirarki dibangun dari blok warna, kepadatan, dan skala tipografi. Kedalaman hanya muncul
+    sebagai cincin 1px (`ring-kumo-*`) dan bayangan jatuh tipis (`shadow-kumo`), tidak pernah
+    sebagai bevel atau gradien hias. Pengecualian tunggal yang disengaja: gradien wajah pada
+    tombol berwarna (lihat atom `Button`).
+  </principle>
 
-## Shadows & Effects
--   **Shadows**: `shadow-none`. **ABSOLUTELY NO BOX SHADOWS ON ELEMENTS.**
--   **Gradients**: Only subtle directional gradients for background decoration (e.g., `from-[#F3F4F6] to-transparent`). Never on buttons or cards. Never colorful or vibrant gradients.
--   **Blur**: None on elements. No backdrop-blur effects.
--   **Background Decoration**: Large geometric shapes with low opacity (`bg-white/5`) positioned absolutely for visual interest.
+  <principle name="Tipografi membawa hirarki">
+    Ukuran dan ketebalan yang membedakan judul dari isi. Judul memakai sentence case dengan
+    `font-semibold`; isi 14px. Tidak ada huruf kapital penuh sebagai gaya.
+  </principle>
 
-# Component Stylings
+  <principle name="Gerak itu reaksi, bukan pertunjukan">
+    Animasi hanya muncul sebagai tanggapan atas interaksi atau perubahan status, selalu pendek
+    (150–300ms), dan hanya memakai properti kompositor (`transform`, `opacity`).
+  </principle>
 
-## Buttons
--   **Primary**: Solid Primary color background. White text. `rounded-md`. Height `h-14` to `h-16` for good touch targets. `transition-all duration-200 hover:scale-105` (scale transformation for feedback). Color shift on hover (e.g., `hover:bg-blue-600`). No shadow.
--   **Secondary**: Solid Muted background (Gray 100). Dark text. `hover:bg-gray-200` with scale effect.
--   **Outline**: `border-4` solid color (not border-2 for more boldness). Text matches border color. Transparent bg. `hover:bg-[color] hover:text-white` (fill effect on hover).
+  <principle name="Kontras lewat pasangan, bukan nilai tunggal">
+    Warna tidak pernah dipakai sendirian: permukaan solid selalu berpasangan dengan
+    `text-kumo-inverse`, dan permukaan `-tint` selalu berpasangan dengan warna status solidnya.
+  </principle>
+</principles>
 
-## Cards
--   **Style**: "Color Block".
--   **Appearance**: Solid background color (White on Gray page, or soft color tints like `bg-blue-50`, `bg-green-50` for features). No shadow. No border. Padding is generous (`p-6` or `p-8`). Rounded corners `rounded-lg`.
--   **Interaction**: `group cursor-pointer transition-all duration-200 hover:scale-[1.02]` (subtle scale). For colored backgrounds, add `hover:bg-[color]-100` for intensification. Icons within cards can have `group-hover:scale-110`.
+<!-- ================================================================== tokens -->
+<tokens>
 
-## Inputs
--   **Normal**: Gray 100 background (`bg-gray-100`). No border. Text Gray 900. `rounded-md`.
--   **Focus**: White background. `border-2` solid Primary. No focus ring glow, just the hard border.
+  <color-mode>
+    <mechanism>
+      Setiap token warna dideklarasikan sekali di dalam `@theme` dengan `light-dark(nilaiTerang,
+      nilaiGelap)`. Tailwind v4 (lewat Lightning CSS) menurunkannya menjadi pasangan variabel
+      `--lightningcss-light` / `--lightningcss-dark`, dan `color-scheme` pada elemen akar
+      menentukan nilai mana yang dipakai.
+    </mechanism>
+    <switch>
+      `src/routes/layout.css`, di dalam `@layer base`:
+      `:root { color-scheme: light }` dan `[data-mode='dark'] { color-scheme: dark }`.
+      `src/app.html` menetapkan `data-mode="light"` pada elemen `html` sebagai nilai awal.
+    </switch>
+    <implication>
+      Mengaktifkan mode gelap cukup dengan mengubah satu atribut pada elemen `html` menjadi
+      `data-mode="dark"`. Tidak ada komponen yang perlu diubah. Tidak ada satu pun varian
+      `dark:` di codebase ini, dan tidak boleh ada yang ditambahkan.
+    </implication>
+  </color-mode>
 
-## Section Stylings
--   **Alternating Backgrounds**: Use White vs. Gray 100 (`#F3F4F6`) vs. Bold accent colors (Primary Blue, Emerald, Amber) to distinguish page sections. Sharp color transitions between sections.
--   **Dividers**: No thin line dividers between sections. Use whitespace or color blocks. Exception: FAQ uses thick `border-2` between items for structure.
--   **Background Decoration**: Use `absolute` positioned geometric shapes with low opacity or subtle gradients for visual interest. Examples: large circles (`rounded-full`), rotated squares, gradient overlays (`from-[color] to-transparent`).
+  <!-- Permukaan, dipakai berurutan dari lapisan paling luar ke dalam. -->
+  <surface>
+    <token name="--color-kumo-canvas"   light="oklch(98.75% 0 0)" dark="oklch(10% 0 0)"       role="latar halaman paling luar" />
+    <token name="--color-kumo-elevated"  light="oklch(98% 0 0)"    dark="oklch(12% 0 0)"       role="permukaan sedikit terangkat" />
+    <token name="--color-kumo-recessed"  light="oklch(96% 0 0)"    dark="oklch(15% 0 0)"       role="permukaan cekung; kepala Panel, latar rel Tabs, latar sidebar" />
+    <token name="--color-kumo-base"      light="#ffffff"           dark="oklch(17% 0 0)"       role="latar komponen bawaan; kartu, tabel, dialog, tooltip" />
+    <token name="--color-kumo-tint"      light="oklch(97% 0 0)"    dark="oklch(26.9% 0 0)"     role="latar tipis; kepala tabel, baris tabel saat hover" />
+    <token name="--color-kumo-overlay"   light="oklch(97.5% 0 0)"  dark="oklch(26.9% 0 0)"     role="permukaan sementara di atas konten" />
+    <token name="--color-kumo-control"   light="#ffffff"           dark="oklch(21% 0 0)"       role="latar bidang isian (input, select)" />
+    <token name="--color-kumo-contrast"  light="oklch(8.5% 0 0)"   dark="oklch(98.5% 0 0)"     role="permukaan terbalik berkontras tinggi; backdrop, toolbar cetak, tombol terpilih" />
+    <token name="--color-kumo-interact"  light="oklch(87% 0 0)"    dark="oklch(37.1% 0 0)"     role="rel saklar saat tidak aktif" />
+    <token name="--color-kumo-fill"      light="oklch(92.2% 0 0)"  dark="oklch(26.9% 0 0)"     role="isian netral; bingkai ikon, batang skeleton, tombol ikon" />
+    <token name="--color-kumo-fill-hover" light="oklch(96.5% 0 0)" dark="oklch(32% 0 0)"       role="keadaan hover dari fill" />
+  </surface>
 
-# Iconography
--   **Library**: `lucide-react`.
--   **Style**: Standard to bold stroke (2px to 2.5px for emphasis).
--   **Treatment**: Often placed inside a solid colored circle (white circle with colored icon like `bg-white text-blue-600`). Circle size `h-14 w-14` or `h-16 w-16`.
--   **Animation**: `transition-transform duration-200 group-hover:scale-110` for icons within cards. Simple color intensity shifts on hover.
+  <brand>
+    <token name="--color-kumo-brand"       light="oklch(0.5772 0.2324 260)" dark="oklch(0.66 0.18 260)" role="warna aksi utama" />
+    <token name="--color-kumo-brand-hover" light="oklch(48.8% 0.243 264.376)" dark="(sama)"           role="hover dan keadaan aktif bidang merek" />
+    <token name="--color-kumo-brand-ring"  value="color-mix(in oklch, var(--color-kumo-brand), black 10%)" role="cincin tepi tombol merek; turunan wajahnya supaya tepi menyatu, bukan garis abu-abu yang terbaca dobel" />
+  </brand>
 
-# Layout & Spacing
--   **Container**: `max-w-7xl`.
--   **Grid**: Rigid. 12-column base. Elements align perfectly.
--   **Spacing**: Comfortable but structured. Multiples of 4 (Tailwind default).
--   **Density**: Medium. Not too airy, not too dense. "Functional".
+  <status>
+    <note>
+      Nilai sengaja diambil dari varian gelap di mode terang dan varian terang di mode gelap,
+      supaya teks kecil tetap lolos WCAG AA saat diletakkan di atas padanan `-tint`-nya.
+      Varian `-tint` dipakai untuk latar; varian solid dipakai untuk teks, ikon, dan tepi.
+    </note>
+    <token name="--color-kumo-info"          light="oklch(42.4% 0.199 265.638)" dark="oklch(70.7% 0.165 254.624)" role="informasi" />
+    <token name="--color-kumo-info-tint"     light="oklch(93.2% 0.032 255.6 / 0.45)" dark="oklch(38% 0.145 265.5 / 0.22)" role="latar informasi" />
+    <token name="--color-kumo-success"       light="oklch(43.2% 0.095 166.913)" dark="oklch(90.5% 0.093 164.15)" role="berhasil" />
+    <token name="--color-kumo-success-tint"  light="oklch(96.2% 0.043 156.7 / 0.57)" dark="oklch(39.3% 0.096 152.3 / 0.2)" role="latar berhasil" />
+    <token name="--color-kumo-warning"       light="oklch(47% 0.137 61.5)"      dark="oklch(75% 0.183 55.934)" role="peringatan" />
+    <token name="--color-kumo-warning-tint"  light="oklch(93.1% 0.107 94.6 / 0.2)" dark="oklch(35.3% 0.079 65 / 0.37)" role="latar peringatan" />
+    <token name="--color-kumo-danger"        light="oklch(50.5% 0.213 27.518)"  dark="oklch(70.4% 0.191 22.216)" role="bahaya / destruktif" />
+    <token name="--color-kumo-danger-tint"   light="oklch(93.6% 0.032 17.7 / 0.42)" dark="oklch(42.9% 0.176 28.7 / 0.17)" role="latar bahaya" />
+    <token name="--color-kumo-danger-hover"  light="oklch(44.4% 0.177 26.899)"  dark="oklch(63.7% 0.237 25.331)" role="hover bidang bahaya" />
+  </status>
 
-# Motion
--   **Vibe**: "Digital", "Snappy", "Direct".
--   **Transitions**: `transition-all duration-200` for most interactions. `duration-300` for larger transformations.
--   **Hover**: Immediate visual feedback through:
-     - Scale transformations (`hover:scale-105` for buttons, `hover:scale-[1.02]` for cards)
-     - Color shifts (darkening or lightening)
-     - Color fills (outline buttons filling with color)
-     - Icon scaling within cards (`group-hover:scale-110`)
+  <text>
+    <token name="--color-kumo-default"     light="oklch(21% 0 0)"   dark="oklch(97% 0 0)"      role="teks isi utama" />
+    <token name="--color-kumo-strong"      light="oklch(14.5% 0 0)" dark="oklch(98.5% 0 0)"   role="teks judul dan label penting" />
+    <token name="--color-kumo-subtle"      light="oklch(55.6% 0 0)" dark="oklch(70.8% 0 0)"   role="teks sekunder, keterangan, meta" />
+    <token name="--color-kumo-inactive"    light="oklch(87% 0 0)"   dark="oklch(43.9% 0 0)"   role="teks nonaktif dan pemisah redup" />
+    <token name="--color-kumo-placeholder" light="oklch(70.8% 0 0)" dark="oklch(55.6% 0 0)"   role="teks placeholder bidang isian" />
+    <token name="--color-kumo-inverse"     light="oklch(97% 0 0)"   dark="oklch(21% 0 0)"      role="teks di atas permukaan solid/terbalik" />
+    <token name="--color-kumo-link"        light="oklch(42.4% 0.199 265.638)" dark="oklch(70.7% 0.165 254.624)" role="teks tautan" />
+  </text>
 
-# Accessibility
--   **Focus Rings**: Since we have no shadows, focus states must use high-contrast `ring-2 ring-offset-2 ring-blue-500` or similar solid outlines.
--   **Contrast**: Text on colored backgrounds must pass WCAG AA (e.g., White text on Blue 500 is okay, but check carefully with lighter accents).
+  <line-and-focus>
+    <token name="--color-kumo-line"     light="oklch(14.5% 0 0 / 0.1)" dark="oklch(32% 0 0)"     role="garis tipis semi transparan; tepi kontrol, cincin, pemisah baris" />
+    <token name="--color-kumo-hairline" light="#e5e5e5"               dark="oklch(26.9% 0 0)"   role="garis rambut pemisah antar blok" />
+    <token name="--color-kumo-focus"    light="oklch(15% 0 0)"        dark="oklch(93.5% 0 0)"   role="warna fokus netral" />
+  </line-and-focus>
 
-# Non-Genericness / "The Bold Factor"
--   **Avoid**: "Material Design" floating cards, generic Bootstrap layouts, subtle pastels everywhere.
--   **Emphasize**: The "Poster" look. Treat every section like a flat graphic poster with bold color blocking.
--   **Bold Choices Implemented**:
-     - **Large decorative geometric shapes** in hero background (circles, rotated squares with low opacity)
-     - **Vibrant full-section color blocks** (Blue hero, Emerald benefits, Amber CTA, Dark gray How It Works & Footer)
-     - **Dramatic scale effects** on pricing cards (popular tier starts larger and scales more)
-     - **Multi-color stat numbers** (each stat uses a different accent color)
-     - **Abstract geometric compositions** (overlapping shapes in hero illustration and benefits section)
-     - **Pronounced hover states** (scale, color intensification, fills)
-     - **Bold typography** with tight leading and strong weight contrast
-     - **Thick borders** (border-4 on outline buttons, border-2 on FAQ items)
--   **Visual Interest Without Depth**: Achieved through color contrast, geometric layering, and scale—never shadows or gradients.
+  <elevation-tokens>
+    <token name="--color-kumo-shadow-edge" light="oklch(0% 0 0 / 0.12)"  dark="oklch(100% 0 0 / 0.1)" role="komponen cincin pada bayangan" />
+    <token name="--color-kumo-shadow-drop" light="oklch(0% 0 0 / 0.08)"  dark="oklch(0% 0 0 / 0.3)"   role="komponen bayangan jatuh" />
+    <shadow name="--shadow-kumo"         value="0 1px 2px 0 var(--color-kumo-shadow-drop), 0 0 0 1px var(--color-kumo-shadow-edge)" role="elevasi bawaan: cincin 1px sebagai tepi sekaligus bayangan jatuh tipis" />
+    <shadow name="--shadow-kumo-primary" value="0 1px 2px 0 var(--color-kumo-shadow-drop), 0 0 0 1px var(--color-kumo-brand-ring)"  role="elevasi tombol primary; cincinnya turunan warna merek" />
+  </elevation-tokens>
+
+  <motion-tokens>
+    <note>
+      Satu skala durasi/easing dipakai semua animasi reaksi-interaksi. Animasi masuk/keluar
+      hanya boleh memakai `transform` dan `opacity`.
+    </note>
+    <token name="--ease-kumo-out"       value="cubic-bezier(0.4, 0, 0.2, 1)" role="easing standar" />
+    <token name="--duration-kumo-fast"  value="150ms" role="transisi kontrol dan tombol" />
+    <token name="--duration-kumo-base"  value="200ms" role="animasi keluar, dialog, tooltip" />
+    <token name="--duration-kumo-slow"  value="300ms" role="animasi masuk, drawer sidebar" />
+  </motion-tokens>
+
+</tokens>
+
+<!-- ============================================================ typography -->
+<typography>
+  <families>
+    <family name="--font-sans" value="'Outfit', ui-sans-serif, system-ui, sans-serif" role="seluruh antarmuka" />
+    <family name="--font-serif" value="'Gama Serif', ui-serif, Georgia, serif" role="aksen serif" />
+    <note>
+      `Gama Serif` dimuat lewat `@font-face` dari `src/lib/assets/gama-serif-regular-webfont.woff`
+      dengan `font-weight: 400` dan `font-display: swap`.
+    </note>
+  </families>
+
+  <scale>
+    <step name="Judul halaman"  class="text-xl sm:text-2xl" weight="font-semibold" color="text-kumo-strong" example="atom PageHeader" />
+    <step name="Judul bagian"   class="text-sm"             weight="font-semibold" color="text-kumo-strong" example="kepala Panel, judul MoneyFlowPanel" />
+    <step name="Teks isi"       class="text-sm"             weight="font-normal"   color="text-kumo-default" example="14px — ukuran wajib untuk isi dan kontrol" />
+    <step name="Teks sekunder"  class="text-sm"             weight="font-normal"   color="text-kumo-subtle" example="keterangan PageHeader, pesan dialog" />
+    <step name="Meta / label"   class="text-xs"             weight="font-medium"   color="text-kumo-subtle" example="judul kolom tabel, hitungan, label FormField" />
+    <step name="Angka metrik"   class="text-lg sm:text-2xl" weight="font-semibold" color="text-kumo-default" example="nilai StatCard, tabular-nums" />
+  </scale>
+
+  <rules>
+    <rule id="content-text-14px">
+      Semua teks isi dan kontrol (body, tombol, isian, sel data) berukuran 14px (`text-sm`).
+      16px ke atas hanya untuk judul dan subjudul. `text-xs` dipakai untuk meta, label, dan
+      hitungan — bukan untuk isi yang harus dibaca sebagai kalimat.
+    </rule>
+    <rule id="sentence-case">
+      Judul dan label selalu sentence case. Huruf kapital penuh (`uppercase`) tidak dipakai
+      sebagai gaya di mana pun.
+    </rule>
+    <rule id="no-tracking-override">
+      Tidak ada kelas `tracking-*` dan tidak ada override `letter-spacing`. Jarak antarhuruf
+      bawaan font dipertahankan.
+    </rule>
+    <rule id="no-font-bold">
+      `font-bold` dan `font-extrabold` tidak dipakai. Judul memakai `font-semibold`, penekanan
+      dalam baris teks memakai `font-medium` atau `font-semibold`.
+    </rule>
+    <rule id="tabular-numerals">
+      Semua angka rupiah memakai `tabular-nums` (lewat atom `Money`) supaya kolom nominal
+      rata secara vertikal.
+    </rule>
+  </rules>
+</typography>
+
+<!-- ================================================== shape and elevation -->
+<shape-and-elevation>
+  <radii>
+    <radius value="rounded-lg (8px)" role="bawaan: tombol, kontrol isian, kartu, dialog, tepi tabel" />
+    <radius value="rounded-md (6px)" role="petak kecil di dalam kontainer: sel segmen Tabs, tombol sinkron" />
+    <radius value="rounded-full"     role="pil: Badge, bingkai ikon bulat, rel saklar, bingkai logo" />
+    <note>
+      Radius bersifat konsentris: radius dalam = radius luar − padding. Contohnya rel Tabs
+      `rounded-lg` (8px) dengan `px-0.5` (2px) memuat sel `rounded-md` (6px).
+    </note>
+  </radii>
+
+  <edges>
+    <rule id="ring-not-border">
+      Tepi dibuat dengan `ring-1` + token warna, bukan `border`. Tidak ada elemen yang memakai
+      `border` bersamaan dengan drop shadow.
+    </rule>
+    <rule id="border-for-separation">
+      `border-*` hanya dipakai untuk memisahkan elemen yang menempel/menempel saat menggulir:
+      kepala tabel yang sticky, kepala dan kaki Panel, rel Tabs bergaya `underline`, sidebar.
+    </rule>
+    <pairing name="tepi kartu">  `bg-kumo-base` + `ring-1 ring-kumo-hairline` </pairing>
+    <pairing name="tepi kontrol">`bg-kumo-control` + `ring-1 ring-kumo-line` </pairing>
+    <pairing name="elevasi bawaan">`shadow-kumo` (cincin 1px + bayangan jatuh tipis) </pairing>
+    <pairing name="elevasi merek">`shadow-kumo-primary` (cincin turunan warna merek) </pairing>
+  </edges>
+</shape-and-elevation>
+
+<!-- ========================================================== iconography -->
+<iconography>
+  <library>@lucide/svelte</library>
+  <sizes>
+    <size value="size-3.5 (14px)" role="ikon pemisah breadcrumb, penanda urut kolom tabel" />
+    <size value="size-4 (16px)"   role="ikon di dalam tombol, Alert, Toast, baris aksi" />
+    <size value="size-[18px]"     role="ikon navigasi sidebar" />
+    <size value="size-5 (20px)"   role="ikon besar: kepala dialog, EmptyState" />
+    <size value="size-6 (24px)"   role="ikon halaman penuh: offline, galat" />
+    <size value="size-8 (32px)"   role="halaman galat" />
+  </sizes>
+  <stroke-widths>
+    <width value="2"    role="bawaan; ikon besar dan ikon di dalam bidang" />
+    <width value="2.25" role="ikon baris dan navigasi — sedikit ditebalkan agar terbaca kecil" />
+    <width value="2.5"  role="penekanan: penanda arah pada tombol, penanda urut kolom" />
+  </stroke-widths>
+  <treatment>
+    Ikon selalu `shrink-0` dan sejajar tengah terhadap baris teksnya. Ikon yang berada di dalam
+    wadah bulat memakai latar `bg-kumo-fill` (netral) atau `bg-kumo-{status}-tint` dengan warna
+    ikon diambil dari pasangan solidnya. Ikon dekoratif diberi `aria-hidden="true"`.
+  </treatment>
+</iconography>
+
+<!-- ========================================================= atomic design -->
+<atomic-design>
+  <note>
+    36 komponen, 3 layout, 41 halaman. Setiap komponen dicatat dengan tujuan, API, varian,
+    token, keadaan interaksi, dan komposisinya. Tanda `—` berarti tidak ada.
+  </note>
+
+  <!-- ============================================================ ATOMS -->
+  <atoms>
+    <note>
+      Atom: satu tugas, tidak menyusun komponen lain dari proyek ini. Boleh menerima `Snippet`
+      sebagai isi, tapi tidak mengimpor komponen.
+    </note>
+
+    <atom name="Alert" file="src/lib/components/Alert.svelte">
+      <purpose>Kotak pesan status sebaris dengan ikon pengawal.</purpose>
+      <api>variant: info | success | error = info; children: Snippet (wajib).</api>
+      <tokens>info → bg-kumo-info-tint + text-kumo-info; success → bg-kumo-success-tint + text-kumo-success; error → bg-kumo-danger-tint + text-kumo-danger.</tokens>
+      <states>Statis. Peran aksesibilitas: role="alert" untuk error, selain itu role="status".</states>
+      <markup>flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium</markup>
+    </atom>
+
+    <atom name="Badge" file="src/lib/components/Badge.svelte">
+      <purpose>Pil status kecil untuk melabeli atau menandai keadaan.</purpose>
+      <api>variant: neutral | info | success | danger | warning = neutral; children: Snippet (wajib).</api>
+      <tokens>neutral → bg-kumo-fill + text-kumo-default; info/success/danger/warning → bg-kumo-{status}-tint + text-kumo-{status}.</tokens>
+      <states>Statis.</states>
+      <markup>inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium</markup>
+    </atom>
+
+    <atom name="Breadcrumb" file="src/lib/components/Breadcrumb.svelte">
+      <purpose>Jejak navigasi yang diturunkan otomatis dari route aktif.</purpose>
+      <api>Tanpa prop. Sumber data dari `crumbsFor(page)` di `src/lib/breadcrumbs.ts`.</api>
+      <tokens>text-kumo-inactive (pemisah), text-kumo-subtle (tautan), text-kumo-default (halaman aktif).</tokens>
+      <states>Tautan: hover:text-kumo-default.</states>
+      <markup>nav.mb-4 · ol: flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs</markup>
+    </atom>
+
+    <atom name="Button" file="src/lib/components/Button.svelte">
+      <purpose>Pemicu aksi; merender elemen `a` bila diberi `href`, selain itu `button`.</purpose>
+      <api>variant: primary | secondary | outline | danger | ghost | ghostDanger = primary; size: sm | md | icon = md; href; type: button | submit = button; disabled; loading; autofocus; class; onclick; title; ariaLabel; children: Snippet (wajib).</api>
+      <sizes>sm → h-8 px-3 text-sm · md → h-9 px-4 text-sm · icon → size-9 p-0</sizes>
+      <tokens>
+        primary → bg-kumo-brand + text-kumo-inverse + shadow-kumo-primary;
+        secondary → bg-kumo-base + text-kumo-default + shadow-kumo;
+        danger → bg-kumo-danger + text-kumo-inverse + shadow-kumo;
+        outline → text-kumo-default + ring-1 ring-kumo-line, hover:bg-kumo-fill-hover;
+        ghost → text-kumo-subtle, hover:bg-kumo-fill-hover hover:text-kumo-default;
+        ghostDanger → text-kumo-subtle, hover:bg-kumo-danger-tint hover:text-kumo-danger.
+      </tokens>
+      <states>
+        hover: pertukaran warna wajah (lihat efek wajah); focus-visible: ring-2 ring-kumo-brand
+        ring-offset-2 ring-offset-kumo-canvas; active: scale-[0.97]; disabled: opacity-50,
+        pointer-events-none, tanpa bayangan; loading: pointer-events-none dengan opasitas penuh
+        (sengaja tidak diredupkan supaya spinner terbaca sebagai proses) + aria-busy.
+      </states>
+      <face-effect>
+        Varian berwajah penuh (primary, secondary, danger) mendapat satu lapis gradien di dalam
+        elemen `span.btn-shine` berposisi absolut, lalu isi tombol dibungkus `span` berposisi
+        relatif agar menang tumpukan.
+        Gradien: `linear-gradient(to bottom, color-mix(in oklab, var(--face) var(--shine-top), white), color-mix(in oklab, var(--face) 92%, black))`
+        dengan `--shine-top: 88%`, ditambah garis sorot `inset 0 1px 0 0 oklch(1 0 0 / 0.25)`
+        sebagai pantulan tepi atas.
+        Ujung gradien diturunkan dari variabel `--btn-face`, bukan nilai warna tetap, sehingga
+        hover cukup menukar variabelnya dan seluruh gradien ikut menyesuaikan — dan gradien
+        otomatis membalik saat mode gelap.
+        Varian ghost dan outline sengaja dibiarkan rata: gradien di atas bidang tembus pandang
+        terbaca sebagai kotak, bukan tombol.
+        primary tidak menukar warna wajah saat hover; hanya ujung atasnya yang menjadi lebih
+        terang lewat `--btn-shine-top-hover: 80%`, sehingga ujung bawahnya tetap.
+      </face-effect>
+      <markup>btn relative isolate inline-flex shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg font-medium transition-[transform,background-color,color,box-shadow] duration-150 ease-out</markup>
+      <composes>—</composes>
+      <style-block>Ya — hanya `.btn-shine` dan aturan hover `.btn:hover:not(:disabled) .btn-shine`.</style-block>
+    </atom>
+
+    <atom name="EmptyState" file="src/lib/components/EmptyState.svelte">
+      <purpose>Penanda keadaan kosong yang terpusat.</purpose>
+      <api>title: string (wajib); description?: string.</api>
+      <tokens>bg-kumo-fill (wadah ikon), text-kumo-subtle (ikon, deskripsi), text-kumo-default (judul).</tokens>
+      <states>Statis.</states>
+      <markup>flex flex-col items-center justify-center gap-2 px-6 py-16 text-center</markup>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="FlashToast" file="src/lib/components/FlashToast.svelte">
+      <purpose>Komponen tanpa markup; mendorong pesan flash dari server ke store toast.</purpose>
+      <api>message?: string | null = null; success?: boolean = true.</api>
+      <tokens>—</tokens>
+      <states>Reaktif lewat `$effect`: menolak pesan yang sama dua kali.</states>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="FormField" file="src/lib/components/FormField.svelte">
+      <purpose>Pembungkus label + kontrol + pesan galat/petunjuk.</purpose>
+      <api>label: string (wajib); for?: string; error?: string; hint?: string; children: Snippet (wajib).</api>
+      <tokens>label lewat `labelClass` → text-kumo-strong; error → text-kumo-danger; hint → text-kumo-subtle.</tokens>
+      <states>Galat dan petunjuk saling eksklusif; keduanya menempati kotak setinggi `min-h-4` supaya tata letak tidak bergeser saat pesan muncul.</states>
+      <markup>label: mb-1.5 block text-sm font-medium text-kumo-strong · pesan: mt-1.5 min-h-4 text-xs leading-4</markup>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="GolonganFilter" file="src/lib/components/GolonganFilter.svelte">
+      <purpose>Select penyaring kelompok golongan.</purpose>
+      <api>kelompok?: string = ''; options: string[] (wajib).</api>
+      <tokens>Lewat `labelClass` dan `selectClass` di `src/lib/ui.ts`.</tokens>
+      <states>Bawaan select native ditambah kelas `select-control` (chevron SVG, appearance none).</states>
+      <markup>w-full sm:w-44</markup>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="Money" file="src/lib/components/Money.svelte">
+      <purpose>Memformat angka menjadi rupiah.</purpose>
+      <api>value: number | null | undefined (wajib); class?: string = ''; bold?: boolean = false.</api>
+      <tokens>—</tokens>
+      <states>Statis. Selalu `tabular-nums`.</states>
+      <markup>span.tabular-nums (+ font-semibold bila bold)</markup>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="MoneyInput" file="src/lib/components/MoneyInput.svelte">
+      <purpose>Isian angka rupiah dengan pemisah ribuan otomatis.</purpose>
+      <api>value = $bindable&lt;number | null&gt;(null); id?: string; name?: string; required?: boolean = false; placeholder?: string = '0'.</api>
+      <tokens>Lewat `inputClass`. Bila `name` diisi, ditambahkan input tersembunyi agar form tetap terkirim tanpa JS.</tokens>
+      <states>Angka diformat saat tidak fokus; saat fokus, pengguna mengetik digit mentah.</states>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="PageHeader" file="src/lib/components/PageHeader.svelte">
+      <purpose>Judul halaman + deskripsi + slot aksi.</purpose>
+      <api>title: string (wajib); description?: string; children?: Snippet.</api>
+      <tokens>text-kumo-strong (judul), text-kumo-subtle (deskripsi).</tokens>
+      <states>Responsif: bertumpuk di layar kecil, judul dan aksi sebaris mulai `sm`.</states>
+      <markup>h1: text-xl font-semibold sm:text-2xl · deskripsi: mt-1 text-sm</markup>
+      <detail>
+        Slot aksi memaksa anak `a`/`button` menjadi `flex-1` di layar kecil dan kembali
+        `flex-initial` mulai `sm`, sehingga deretan tombol mengisi lebar (bukan menggantung)
+        saat sempit.
+      </detail>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="Pagination" file="src/lib/components/Pagination.svelte">
+      <purpose>Navigasi halaman berbasis tautan URL.</purpose>
+      <api>current: number (wajib); total: number (wajib); perPage: number (wajib).</api>
+      <tokens>bg-kumo-base + text-kumo-default + shadow-kumo; hover:bg-kumo-fill-hover.</tokens>
+      <states>Dirender hanya bila total halaman lebih dari satu. Halaman pertama menghapus parameter `page` dari URL.</states>
+      <markup>navClass: inline-flex size-9 ... rounded-lg transition-[transform,background-color,color,box-shadow] duration-150 ease-out active:scale-[0.97]</markup>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="PeriodePicker" file="src/lib/components/PeriodePicker.svelte">
+      <purpose>Pasangan select bulan + tahun.</purpose>
+      <api>bulan?: string = ''; tahun?: string = ''.</api>
+      <tokens>Lewat `labelClass` dan `selectClass`.</tokens>
+      <states>Rentang tahun dari `TAHUN_AWAL_DATA` sampai tahun berjalan + 1; tahun terpilih di luar rentang tetap disertakan.</states>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="SearchSelect" file="src/lib/components/SearchSelect.svelte">
+      <purpose>Select tunggal dengan pencarian, dibangun di atas Tom Select.</purpose>
+      <api>id: string (wajib); name: string (wajib); options: { value, label }[] (wajib); value?: string = ''; placeholder?: string = '— Pilih —'; required?: boolean = false; ariaLabel?: string.</api>
+      <tokens>Semua lewat variabel CSS: --color-kumo-line, --color-kumo-control, --color-kumo-default, --color-kumo-base, --color-kumo-brand, --color-kumo-placeholder, --color-kumo-tint, --color-kumo-strong, --color-kumo-inverse, --color-kumo-subtle.</tokens>
+      <states>Fokus: tepi merek + cincin 1px. Opsi aktif: bg-kumo-tint. Opsi terpilih: bg-kumo-brand + text-kumo-inverse.</states>
+      <detail>
+        Elemen `select` asli tetap dipakai mengirim form (Tom Select hanya mengganti tampilannya),
+        jadi validasi HTML maupun pengiriman tanpa JS tetap bekerja. Dropdown ditempel ke `body`
+        agar tidak terpotong kontainer ber-`overflow-hidden`.
+      </detail>
+      <composes>—</composes>
+      <style-block>Ya — seluruhnya `:global()` untuk menimpa gaya Tom Select.</style-block>
+    </atom>
+
+    <atom name="Skeleton" file="src/lib/components/Skeleton.svelte">
+      <purpose>Kerangka pemuatan berbentuk baris tabel.</purpose>
+      <api>rows?: number = 5; toolbar?: boolean = false; class?: string = ''.</api>
+      <tokens>bg-kumo-fill (batang, berdenyut), bg-kumo-tint (baris kepala), bg-kumo-base (badan), border-kumo-hairline (pemisah baris).</tokens>
+      <states>Setiap batang memakai `animate-pulse`. Bentuknya meniru Table/DataTable: kepala bertinggi `h-3`, baris `py-3.5` dengan tiga batang `h-4`.</states>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="StatCard" file="src/lib/components/StatCard.svelte">
+      <purpose>Kartu satu metrik.</purpose>
+      <api>label: string (wajib); value: string (wajib); accent?: string = 'text-kumo-default'; bg?: string = 'bg-kumo-base'; hint?: string.</api>
+      <tokens>ring-kumo-hairline (tepi), text-kumo-subtle (label, hint). Warna aksen dan latar diserahkan pemanggil sebagai kelas token.</tokens>
+      <states>Statis.</states>
+      <markup>root: rounded-lg p-4 ring-1 ring-kumo-hairline sm:p-6 · nilai: text-lg font-semibold sm:text-2xl</markup>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="TableAction" file="src/lib/components/TableAction.svelte">
+      <purpose>Aksi baris berbentuk tombol ikon.</purpose>
+      <api>href?: string; onclick?: (event) =&gt; void; label: string (wajib, dipakai sebagai aria-label dan isi tooltip); Icon: Component (wajib); tone: default | danger = default.</api>
+      <tokens>default → text-kumo-subtle, hover:bg-kumo-fill-hover hover:text-kumo-default; danger → text-kumo-subtle, hover:bg-kumo-danger-tint hover:text-kumo-danger.</tokens>
+      <states>focus-visible: ring-2 ring-kumo-brand; active: scale-[0.97].</states>
+      <markup>inline-flex size-9 ... rounded-lg transition-[transform,background-color,color] duration-150 ease-out</markup>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="TableLink" file="src/lib/components/TableLink.svelte">
+      <purpose>Tautan "lihat detail" yang area kliknya meluas ke seluruh sel.</purpose>
+      <api>href: string (wajib); label: string (wajib, isi tooltip); children: Snippet (wajib).</api>
+      <tokens>hover:text-kumo-brand.</tokens>
+      <states>hover: underline menjadi solid.</states>
+      <detail>
+        `after:absolute after:inset-0` memperluas area klik/hover ke seluruh sel, dengan syarat
+        sel induk memakai `class="relative"`.
+      </detail>
+      <markup>cursor-pointer underline underline-offset-[3px] transition-colors duration-150 ease-out</markup>
+      <composes>—</composes>
+    </atom>
+
+    <atom name="NavMenu" file="src/lib/components/NavMenu.svelte">
+      <purpose>Navigasi sidebar berkelompok dengan penanda route aktif.</purpose>
+      <api>onNavigate?: () =&gt; void. Data seksi ditulis tetap di dalam komponen: Transaksi (Dashboard, Rutin, Pinjaman), Data (Karyawan, Item, Laporan, Email, Konfigurasi), Sistem (Sinkronisasi).</api>
+      <tokens>text-kumo-subtle (seksi, tautan diam), bg-kumo-brand + text-kumo-inverse (aktif), bg-kumo-fill-hover + text-kumo-default (hover), bg-kumo-fill (aktif ditekan).</tokens>
+      <states>aktif: bg-kumo-brand text-kumo-inverse, active:bg-kumo-brand-hover; hover pada tautan diam: bg-kumo-fill-hover; active: scale-[0.97]; aria-current="page" untuk item aktif.</states>
+      <markup>tautan: flex items-center gap-3 rounded-lg px-2 py-2 text-xs font-medium transition-[transform,background-color,color] duration-150 ease-out</markup>
+      <composes>—</composes>
+    </atom>
+  </atoms>
+
+  <!-- ========================================================= MOLECULES -->
+  <molecules>
+    <note>
+      Molekul: menyusun beberapa atom atau beberapa bagian menjadi satu kesatuan bermakna.
+    </note>
+
+    <molecule name="ConfirmButton" file="src/lib/components/ConfirmButton.svelte">
+      <purpose>Tombol pemicu yang membuka dialog konfirmasi, lalu mengirim form terdekat.</purpose>
+      <api>message?; heading? = 'Konfirmasi'; label? = 'Hapus'; confirmLabel? = 'Ya, Hapus'; variant? = danger; size? = md; disabled?; class?; tone: danger | primary | neutral = danger; icon: Component = AlertTriangle; children: Snippet (wajib).</api>
+      <tokens>Nada ornamen: danger → bg-kumo-danger-tint + text-kumo-danger; primary → bg-kumo-info-tint + text-kumo-info; neutral → bg-kumo-fill + text-kumo-subtle. Dialog: bg-kumo-base, judul text-kumo-strong, pesan text-kumo-subtle, kaki bg-kumo-recessed.</tokens>
+      <states>
+        Dialog memakai elemen `dialog` native (`showModal()`). Saat dibatalkan, kelas `closing`
+        dipasang lebih dulu dan penutupan sebenarnya menunggu `animationend`, sehingga animasi
+        keluar tetap terlihat. Klik di area backdrop menutup dialog.
+      </states>
+      <composes>Button (pemicu, tombol "Batal" secondary, tombol konfirmasi sesuai nada).</composes>
+    </molecule>
+
+    <molecule name="DataTable" file="src/lib/components/DataTable.svelte">
+      <purpose>Kerangka tabel yang bisa diurutkan, dikendalikan larik `columns`.</purpose>
+      <api>columns: Column[] (wajib; Column = { key, label, sortable?, align? }); sort?: string = ''; dir: asc | desc = asc; sticky?: boolean = false; children: Snippet (wajib, dirender sebagai isi tbody).</api>
+      <tokens>bg-kumo-base + ring-kumo-hairline (bingkai), bg-kumo-tint (baris kepala, baris hover), divide-kumo-hairline (pemisah baris), text-kumo-default (sel), text-kumo-subtle (judul kolom).</tokens>
+      <states>
+        Urutan disimpan di URL (`sort`, `dir`) sehingga bisa dibagikan dan tahan muat ulang;
+        tautan urut menghapus parameter `page`. Baris menyala saat hover maupun saat ada kontrol
+        di dalamnya difokus (`:focus-within`). Header bisa `sticky top-0` bila `sticky` aktif.
+      </states>
+      <markup>tabel: w-full min-w-xl border-collapse text-sm sm:min-w-160 · th: text-xs font-medium text-kumo-subtle</markup>
+      <composes>—</composes>
+    </molecule>
+
+    <molecule name="FilterBar" file="src/lib/components/FilterBar.svelte">
+      <purpose>Pembungkus form penyaring (GET) dengan penyaringan di sisi klien.</purpose>
+      <api>children: Snippet (wajib); class?: string = ''.</api>
+      <tokens>bg-kumo-base + ring-kumo-hairline.</tokens>
+      <states>Submit dicegah lalu diarahkan lewat `applyForm` di `src/lib/nav.ts`; anak `button` dipaksa selebar penuh di layar kecil.</states>
+      <markup>mb-4 flex flex-wrap items-end gap-3 rounded-lg p-3.5 sm:p-5</markup>
+      <composes>—</composes>
+    </molecule>
+
+    <molecule name="LoadingOverlay" file="src/lib/components/LoadingOverlay.svelte">
+      <purpose>Lapisan pemuatan penuh layar yang dikendalikan store `loading`.</purpose>
+      <api>Tanpa prop.</api>
+      <tokens>bg-kumo-contrast/40 (tirai), bg-kumo-base + shadow-kumo + ring-kumo-hairline (kartu), bg-kumo-brand (petak logo), bg-kumo-fill (rel), text-kumo-subtle (pesan).</tokens>
+      <states>role="alertdialog" + aria-busy. Ikon berdenyut (`.loading-logo`) dan batang bergerak (`.loading-fill`).</states>
+      <composes>—</composes>
+    </molecule>
+
+    <molecule name="MoneyFlowPanel" file="src/lib/components/MoneyFlowPanel.svelte">
+      <purpose>Panel arus uang (pemasukan/potongan) dengan kepala bernada dan tabel item.</purpose>
+      <api>tone: in | out (wajib); title: string (wajib); total: number (wajib); count: number (wajib); children: Snippet (wajib, baris tabel).</api>
+      <tokens>
+        Nada di `src/lib/money-flow.ts`: in → panel bg-kumo-success-tint, ikon bg-kumo-base, aksen text-kumo-success; out → panel bg-kumo-danger-tint, ikon bg-kumo-base, aksen text-kumo-danger.
+        Ditambah bg-kumo-base + ring-kumo-hairline (bingkai), bg-kumo-tint (baris kepala), divide-kumo-hairline.
+      </tokens>
+      <states>Statis. Tanda arah (+/−), label teks, dan ikon selalu hadir mendampingi warna.</states>
+      <detail>
+        Belum dipakai halaman mana pun saat dokumen ini ditulis. Dipertahankan sebagai pola
+        rujukan; periksa ulang sebelum memakainya.
+      </detail>
+      <composes>—</composes>
+    </molecule>
+
+    <molecule name="Panel" file="src/lib/components/Panel.svelte">
+      <purpose>Kartu bagian dengan kepala bernada opsional.</purpose>
+      <api>title?: string; legend?: string; description?: string; tone: ink | primary | muted = ink; flush?: boolean = false; grouped?: boolean = false; class?: string = ''; children: Snippet (wajib).</api>
+      <tokens>bingkai bg-kumo-base + ring-kumo-hairline; nada kepala: ink → bg-kumo-recessed + text-kumo-strong; primary → bg-kumo-brand + text-kumo-inverse; muted → bg-kumo-tint + text-kumo-subtle.</tokens>
+      <states>
+        `grouped` membungkus isi dalam `space-y-5` sekaligus memasang role="group" +
+        aria-label. `flush` menghapus padding badan (dipakai saat badan berupa tabel).
+      </states>
+      <markup>kepala: flex flex-wrap items-baseline gap-x-3 gap-y-1 px-5 py-3 · judul: text-sm font-semibold</markup>
+      <composes>—</composes>
+    </molecule>
+
+    <molecule name="PayslipCard" file="src/lib/components/PayslipCard.svelte">
+      <purpose>Kartu slip gaji untuk layar dan cetak.</purpose>
+      <api>nomor: number; struk: StrukData; bulanLabel: string; bendahara: string; dicetakPada: string (semua wajib).</api>
+      <tokens>Seluruh gaya dari kelas `.slip*` di `src/lib/styles/print.css`; bilah laba bersih memakai var(--color-kumo-brand).</tokens>
+      <states>Statis.</states>
+      <composes>—</composes>
+    </molecule>
+
+    <molecule name="SyncStatus" file="src/lib/components/SyncStatus.svelte">
+      <purpose>Tombol sinkron + ringkasan status sinkronisasi.</purpose>
+      <api>Tanpa prop. Membaca store `syncStatus`.</api>
+      <tokens>bg-kumo-fill + text-kumo-subtle (tombol), hover:bg-kumo-base + hover:ring-1 hover:ring-kumo-line, text-kumo-default (judul), text-kumo-warning (mutasi tertunda, konflik).</tokens>
+      <states>Ikon berputar saat sibuk; tombol nonaktif saat sibuk; active: scale-[0.97].</states>
+      <composes>—</composes>
+    </molecule>
+
+    <molecule name="Table" file="src/lib/components/Table.svelte">
+      <purpose>Kerangka tabel sederhana tanpa pengurutan.</purpose>
+      <api>children: Snippet (wajib) — dirender langsung di dalam elemen table.</api>
+      <tokens>bg-kumo-base + ring-kumo-hairline, bg-kumo-tint (baris kepala, baris hover), divide-kumo-hairline, text-kumo-default, text-kumo-subtle.</tokens>
+      <states>Baris menyala saat hover.</states>
+      <markup>tabel: w-full min-w-xl border-collapse text-sm sm:min-w-160</markup>
+      <composes>—</composes>
+    </molecule>
+
+    <molecule name="TableToolbar" file="src/lib/components/TableToolbar.svelte">
+      <purpose>Pencarian + pemilih jumlah per halaman + hitungan rentang.</purpose>
+      <api>q?: string = ''; per: number; from: number; to: number; total: number (wajib); placeholder?: string = 'Cari…'; paging?: boolean = true.</api>
+      <tokens>Lewat `inputClass`, `labelClass`, `selectClass`; hitungan text-kumo-subtle.</tokens>
+      <states>Submit GET diarahkan lewat `applyForm`; perubahan jumlah per halaman lewat `applyParams`. Hitungan memakai role="status".</states>
+      <composes>Button (tombol cari).</composes>
+    </molecule>
+
+    <molecule name="Tabs" file="src/lib/components/Tabs.svelte">
+      <purpose>Tabs berbasis tautan dengan indikator yang meluncur.</purpose>
+      <api>items: TabItem[] (wajib; { value, label, href }); active: string (wajib); variant: segmented | underline = segmented; size: base | sm = base; class?: string = ''.</api>
+      <tokens>
+        segmented: rel bg-kumo-recessed, indikator bg-kumo-base + ring ring-kumo-line + shadow-sm, aktif text-kumo-default, diam text-kumo-subtle hover:text-kumo-default.
+        underline: rel border-b border-kumo-hairline, indikator bg-kumo-brand setinggi h-0.5, diam hover:bg-kumo-tint.
+        Lingkaran fokus: ring-2 ring-kumo-brand.
+      </tokens>
+      <states>
+        Indikator adalah satu elemen absolut di belakang teks: lebarnya diukur dari tab aktif
+        lewat `getBoundingClientRect`, lalu digeser dengan `transform: translateX()` dan
+        dianimasikan `transition-all duration-200`. Saat tidak ada tab aktif, indikator
+        disembunyikan (`opacity: 0`).
+      </states>
+      <sizes>base → h-9 (segmented) / h-7.5 (underline), teks text-base · sm → h-6.5, teks text-xs</sizes>
+      <detail>
+        Tab adalah tautan, bukan tombol, sehingga keadaan aktif berasal dari URL — bisa dibuka di
+        tab baru dan tahan muat ulang. Rel dapat digulir mendatar (`overflow-x-auto`) untuk label
+        yang panjang. Tabs juga memasang `aria-current="page"` pada tab aktif.
+      </detail>
+      <composes>—</composes>
+    </molecule>
+  </molecules>
+
+  <!-- ========================================================= ORGANISMS -->
+  <organisms>
+    <note>
+      Organisme: menyusun molekul/atom menjadi blok bermakna tingkat halaman, atau memadukan
+      domain (data + aksi) dengan tata letak.
+    </note>
+
+    <organism name="AppShell" file="src/lib/components/AppShell.svelte">
+      <purpose>Kerangka aplikasi: kepala bergerak di ponsel, sidebar off-canvas, kolom isi.</purpose>
+      <api>children: Snippet (wajib).</api>
+      <tokens>
+        bg-kumo-canvas (latar), bg-kumo-base + border-kumo-hairline (kepala ponsel),
+        bg-kumo-recessed + border-kumo-hairline (sidebar), bg-kumo-brand (petak logo),
+        bg-kumo-contrast/40 (tirai sidebar), hover:bg-kumo-fill-hover (tombol),
+        hover:bg-kumo-danger-tint + hover:text-kumo-danger (keluar).
+      </tokens>
+      <states>
+        Sidebar dibuka/tutup lewat status lokal; tirai dapat diklik untuk menutup; tombol `Escape`
+        ikut menutup (lewat `svelte:window onkeydown`). Transisi geser `duration-300`.
+      </states>
+      <geometry>
+        Sidebar tetap `w-64` setinggi layar. Kolom isi digeser `lg:pl-64` agar tidak tertimpa.
+        Isi dibatasi `max-w-7xl` dan dipusatkan, dengan padding `px-3 py-4` → `sm:px-6 sm:py-8`
+        → `lg:px-10`.
+      </geometry>
+      <composes>NavMenu, SyncStatus.</composes>
+    </organism>
+
+    <organism name="Toast" file="src/lib/components/Toast.svelte">
+      <purpose>Tumpukan notifikasi global.</purpose>
+      <api>Tanpa prop. Membaca store `toasts` di `src/lib/toast.svelte.ts`.</api>
+      <tokens>bingkai bg-kumo-{status}-tint + ring-kumo-{status}, ikon text-kumo-{status}, pesan text-kumo-default, tutup text-kumo-subtle, elevasi shadow-kumo.</tokens>
+      <states>Masuk dengan `.animate-in`, keluar dengan `.animate-out` (ditentukan oleh penanda `leaving` pada item). aria-live="polite"; tiap kartu role="status".</states>
+      <markup>penampung: fixed top-4 right-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2</markup>
+      <composes>—</composes>
+    </organism>
+
+    <organism name="KaryawanForm" file="src/lib/components/KaryawanForm.svelte">
+      <purpose>Formulir karyawan (tambah/ubah).</purpose>
+      <api>golongan: { id, nama_golongan, kel_golongan }[] (wajib); values?: Record&lt;string, string&gt; = {}; errors?: Record&lt;string, string&gt; = {}; submitLabel?: string = 'Simpan'.</api>
+      <tokens>Lewat `inputClass`/`selectClass`; tata letak grid `sm:grid-cols-2`.</tokens>
+      <states>Form POST dengan `use:enhance={loadingEnhance('Menyimpan karyawan…')}`. Baris aksi melebar penuh di layar kecil.</states>
+      <composes>Button, Panel, FormField, SearchSelect.</composes>
+    </organism>
+
+    <organism name="PinjamanForm" file="src/lib/components/PinjamanForm.svelte">
+      <purpose>Formulir pinjaman (tambah/ubah).</purpose>
+      <api>karyawanList?; items?; karyawanLabel?; itemLabel?; values? = {}; errors? = {}; submitLabel? = 'Simpan'; cancelHref: string (wajib).</api>
+      <tokens>Lewat kelas bersama; nilai tetap ditampilkan text-kumo-strong saat daftar pilihan kosong.</tokens>
+      <states>
+        Bila daftar karyawan/item kosong, pilihan berubah menjadi teks tetap plus input
+        tersembunyi — supaya form tetap valid tanpa memaksa pengguna memilih ulang.
+      </states>
+      <composes>Button, FormField, MoneyInput, SearchSelect.</composes>
+    </organism>
+
+    <organism name="RutinForm" file="src/lib/components/RutinForm.svelte">
+      <purpose>Formulir item rutin bulanan.</purpose>
+      <api>items?; itemLabel?; values? = {}; errors? = {}; submitLabel? = 'Simpan'; cancelHref: string (wajib).</api>
+      <tokens>Lewat kelas bersama.</tokens>
+      <states>Form POST dengan enhance.</states>
+      <composes>Button, Panel, FormField, MoneyInput, SearchSelect.</composes>
+    </organism>
+
+    <organism name="TransaksiForm" file="src/lib/components/TransaksiForm.svelte">
+      <purpose>Formulir satu transaksi.</purpose>
+      <api>items?; itemLabel?; values? = {}; errors? = {}; submitLabel? = 'Simpan'; cancelHref: string (wajib).</api>
+      <tokens>Lewat kelas bersama.</tokens>
+      <states>Form POST dengan enhance.</states>
+      <composes>Button, Panel, FormField, MoneyInput, SearchSelect.</composes>
+    </organism>
+  </organisms>
+
+  <!-- ========================================================= TEMPLATES -->
+  <templates>
+    <template name="Root" file="src/routes/+layout.svelte">
+      Memuat `layout.css` (token + gaya dasar), memasang favicon, merender isi rute, lalu
+      menaruh LoadingOverlay di luar kedua grup rute sehingga berlaku untuk semua halaman.
+    </template>
+    <template name="(app)" file="src/routes/(app)/+layout.svelte">
+      Membungkus isi dengan AppShell + Breadcrumb dan menaruh Toast di luarnya. `onMount`
+      menutup splash screen dan memasang penjaga `beforeunload` yang mencegah tab ditutup bila
+      masih ada mutasi lokal yang belum tersinkron. Grup ini berjalan tanpa SSR (`ssr = false`).
+    </template>
+    <template name="(print)" file="src/routes/(print)/+layout.svelte">
+      Memuat `print.css`, menampilkan toolbar cetak (berkelas `no-print`) berisi tombol Cetak dan
+      Kembali, lalu kolom isi berkelas `slip-sheet` dengan latar `bg-kumo-canvas`.
+      Grup ini tetap SSR.
+    </template>
+  </templates>
+
+  <!-- ============================================================= PAGES -->
+  <pages>
+    <note>
+      Daftar lengkap 41 halaman beserta actions-nya ada di `docs/04-Frontend/Peta Route.md`
+      (digenerate otomatis). Yang dicatat di sini adalah pola komposisinya, karena itulah bagian
+      yang reproducible.
+    </note>
+
+    <pattern id="A" name="Halaman daftar">
+      Urutan: PageHeader → (FilterBar) → kisi StatCard → TableToolbar → DataTable atau Table →
+      Pagination → EmptyState.
+      Contoh: `(app)/laporan/gaji-bersih`, `(app)/karyawan`, `(app)/item`, `(app)/email`,
+      `(app)/kolektif`.
+      Variasi: `(app)/+page.svelte` (dashboard) memakai gulir-tak-hingga, bukan Pagination —
+      ada sentinel `h-px` yang diamati IntersectionObserver (`rootMargin: 240px`), plus baris
+      Total yang disisipkan di dalam DataTable saat data habis.
+    </pattern>
+
+    <pattern id="B" name="Halaman formulir">
+      Urutan: PageHeader → Alert (bila ada `form.message`) → satu komponen form (KaryawanForm,
+      TransaksiForm, RutinForm, PinjamanForm) yang menerima `values`, `errors`, `submitLabel`,
+      `cancelHref`.
+    </pattern>
+
+    <pattern id="C" name="Halaman konfigurasi">
+      Urutan: PageHeader → Alert → form POST → beberapa Panel `grouped` berisi FormField →
+      baris tombol Simpan/Batal.
+      Contoh: `(app)/konfigurasi`, `(app)/konfigurasi/email` (plus Panel pratinjau berisi iframe
+      `srcdoc`), `(app)/konfigurasi/situs` (saklar yang mengirim form sendiri saat diubah —
+      tanpa tombol simpan).
+    </pattern>
+
+    <pattern id="D" name="Halaman proses periode">
+      Urutan: PageHeader → form enhance → Panel `grouped` berisi PeriodePicker → tombol aksi
+      dengan `loading`. Contoh: `(app)/rutin/proses`, `(app)/pinjaman/proses/[iditm]`.
+    </pattern>
+
+    <pattern id="E" name="Pemilih berbentuk kisi kartu">
+      Urutan: PageHeader → kisi tautan kartu (ikon dalam petak `bg-kumo-base`, judul, deskripsi,
+      penanda "Buka"). Nada kartu memakai `bg-kumo-{status}-tint`.
+      Contoh: `(app)/laporan`, `(app)/transaksi/baru`.
+    </pattern>
+
+    <pattern id="F" name="Laporan dengan penyaring periode">
+      Urutan: FilterBar (PeriodePicker + pilihan) → satu kartu total → TableToolbar → Table →
+      Pagination. Contoh: `(app)/laporan/per-item`, `(app)/laporan/rekap-potongan`.
+    </pattern>
+
+    <pattern id="G" name="Halaman detail">
+      Urutan: tautan kembali → header (PageHeader atau header khusus dengan `text-3xl`) → kisi
+      StatCard → beberapa bagian tabel, sering lewat `{#snippet lines(rows, empty)}` di tingkat
+      halaman. Contoh: `(app)/transaksi/karyawan/[id]`, `(app)/rutin/karyawan/[id]`,
+      `(app)/pinjaman/[iditm]/[idpinjam]`.
+    </pattern>
+
+    <public-pages>
+      `login` (kartu di atas `bg-kumo-recessed`, gambar patung sebagai tanda air),
+      `offline` (kartu status di atas `bg-kumo-recessed`), `+error.svelte` (kartu dengan angka
+      status `text-6xl sm:text-7xl`, nada mengikuti jenis galat), `logout` (form tanpa tampilan).
+    </public-pages>
+  </pages>
+
+  <composition-graph>
+    AppShell → NavMenu, SyncStatus
+    ConfirmButton → Button
+    TableToolbar → Button
+    KaryawanForm → Button, Panel, FormField, SearchSelect
+    RutinForm → Button, Panel, FormField, MoneyInput, SearchSelect
+    TransaksiForm → Button, Panel, FormField, MoneyInput, SearchSelect
+    PinjamanForm → Button, FormField, MoneyInput, SearchSelect
+    Sisanya tidak mengimpor komponen lain (daun) atau hanya menerima Snippet.
+  </composition-graph>
+</atomic-design>
+
+<!-- ================================================ interaction and motion -->
+<interaction-and-motion>
+  <reaction-default>
+    Kontrol interaktif memakai satu resep yang sama:
+    `transition-[transform,background-color,color,box-shadow] duration-150 ease-out` dengan
+    `active:scale-[0.97]` sebagai umpan balik tekan. Warna berubah seketika mengikuti kursor dan
+    transformasi tekan memberi kesan fisik tanpa memindahkan tata letak.
+  </reaction-default>
+
+  <state-vocabulary>
+    <state name="hover">
+      Pertukaran warna latar atau teks ke token `-hover`/`-fill-hover`, atau mengubah opasitas
+      permukaan. Tidak pernah memakai bayangan bertambah atau elemen berpindah.
+    </state>
+    <state name="focus-visible">
+      Selalu `ring-2 ring-kumo-brand ring-offset-2 ring-offset-kumo-canvas` untuk kontrol dan
+      tombol; `ring-2 ring-kumo-brand` tanpa offset untuk tautan dan tab. Tautan biasa memakai
+      `outline: 2px solid var(--color-kumo-brand)` dengan `outline-offset: 2px` (aturan global di
+      `@layer base`).
+    </state>
+    <state name="active">`scale-[0.97]` pada tombol, tautan navigasi, tombol ikon, dan paginasi.</state>
+    <state name="disabled">
+      `opacity-50` + `pointer-events-none`; kursor menjadi `not-allowed` (aturan global).
+      Pengecualian: tombol dalam keadaan memuat tetap pekat agar spinner terbaca.
+    </state>
+    <state name="loading">
+      Tombol memakai prop `loading` (spinner `LoaderCircle` + `aria-busy`), halaman memakai
+      atom Skeleton, dan proses latar memakai LoadingOverlay.
+    </state>
+  </state-vocabulary>
+
+  <keyframes>
+    <animation name=".animate-in"      keyframes="fade-in-up"    duration="var(--duration-kumo-slow)" easing="var(--ease-kumo-out)" usage="masuk: toast, kartu overlay" />
+    <animation name=".animate-out"     keyframes="fade-out-down" duration="var(--duration-kumo-base)" easing="var(--ease-kumo-out)" usage="keluar: toast" />
+    <animation name="dialog-in/out"    keyframes="dialog-in / dialog-out"   duration="var(--duration-kumo-base)" easing="var(--ease-kumo-out)" usage="dialog terbuka dan menutup (kelas `closing`)" />
+    <animation name="backdrop-in/out"  keyframes="backdrop-in / backdrop-out" duration="var(--duration-kumo-base)" easing="ease-out" usage="tirai dialog" />
+    <animation name="tooltip-in"       keyframes="tooltip-in"    duration="0.15s" easing="var(--ease-kumo-out)" usage="tooltip muncul" />
+    <animation name="loading-pulse"    keyframes="loading-pulse" duration="1.6s" easing="ease-in-out" usage="logo pada LoadingOverlay (tak terbatas)" />
+    <animation name="loading-slide"    keyframes="loading-slide" duration="1.2s" easing="ease-in-out" usage="batang progres LoadingOverlay (tak terbatas)" />
+    <animation name="animate-pulse"    keyframes="bawaan Tailwind" usage="batang atom Skeleton" />
+  </keyframes>
+
+  <tooltip>
+    <mechanism>
+      Menggantikan atribut `title` bawaan. Dipasang sebagai action `use:tooltip` dari
+      `src/lib/tooltip.ts`; elemen tip ditempel ke `body` dengan `position: fixed` agar tidak
+      terpotong kontainer ber-`overflow: hidden`, lalu diposisikan ulang saat halaman digulir
+      atau jendela diubah ukurannya.
+    </mechanism>
+    <parameters>content: string; side: top | bottom | left | right = top; delay = 600ms; closeDelay = 0.</parameters>
+    <constraints>
+      Jarak dari anchor 10px, dan posisi selalu dijepit minimal 8px dari tepi viewport. Semua tip
+      yang aktif didaftarkan pada satu pengendali, lalu ditutup serentak oleh satu listener
+      `pointerdown` global — sehingga tip tidak tertinggal di viewport setelah navigasi.
+      Tampilan: kelas `.kumo-tooltip` di `layout.css` (z-index 70, bingkai `kumo-line`, elevasi,
+      panah sesuai `data-side`).
+    </constraints>
+  </tooltip>
+
+  <reduced-motion>
+    Aturan global di `layout.css` memaksa `animation-duration`, `animation-iteration-count`, dan
+    `transition-duration` menjadi nyaris nol saat `prefers-reduced-motion: reduce`. Halaman
+    `(app)/item` juga membaca preferensi ini di JavaScript untuk mematikan transisi masuk tabel.
+  </reduced-motion>
+</interaction-and-motion>
+
+<!-- ==================================================== layout & spacing -->
+<layout-and-spacing>
+  <shell>
+    Sidebar tetap `w-64`; kolom isi `lg:pl-64`; kontainer isi `mx-auto max-w-7xl`; padding isi
+    `px-3 py-4` → `sm:px-6 sm:py-8` → `lg:px-10`. Tidak ada header tetap di layar lebar; header
+    hanya muncul di bawah `lg` dan bersifat `sticky top-0`.
+  </shell>
+
+  <breakpoints>
+    <bp name="sm" value="40rem (640px)" role="grid dua kolom, aksi sebaris, tabel melebar" />
+    <bp name="lg" value="64rem (1024px)" role="sidebar muncul tetap, kolom isi terimbangi" />
+    <bp name="xl" value="80rem (1280px)" role="grid tiga kolom pada kisi kartu" />
+  </breakpoints>
+
+  <spacing-scale>Kelipatan 4 dari skala bawaan Tailwind, tanpa token jarak khusus.</spacing-scale>
+
+  <rhythm>
+    <rule>Judul halaman ke isi: `mb-6` (→ `sm:mb-8`).</rule>
+    <rule>Antar blok besar: `space-y-6` (form) atau `space-y-8` (seksi halaman).</rule>
+    <rule>Antar bidang di dalam form: `space-y-5` (`Panel grouped`).</rule>
+    <rule>Antar kontrol sebaris: `gap-2` (rapat) sampai `gap-3` (longgar).</rule>
+    <rule>Kartu: padding `p-4` (StatCard) sampai `p-6` (Panel, kartu isi).</rule>
+    <rule>Sel tabel: `px-3 py-2` di layar kecil, `sm:px-5`; sel kepala `py-2.5` → `sm:py-3`.</rule>
+  </rhythm>
+
+  <z-index-scale>
+    <layer value="1"     usage="indikator Tabs" />
+    <layer value="2"     usage="tautan tab (di atas indikator)" />
+    <layer value="10"    usage="kepala tabel yang sticky" />
+    <layer value="20"    usage="header ponsel yang sticky" />
+    <layer value="30"    usage="tirai sidebar" />
+    <layer value="40"    usage="sidebar" />
+    <layer value="50"    usage="tumpukan Toast" />
+    <layer value="60"    usage="LoadingOverlay" />
+    <layer value="70"    usage="tooltip" />
+  </z-index-scale>
+</layout-and-spacing>
+
+<!-- ========================================================= accessibility -->
+<accessibility>
+  <focus>
+    Lingkaran fokus wajib terlihat pada semua elemen interaktif dan memakai warna merek dengan
+    offset terhadap latar kanvas, supaya tetap terbaca di atas permukaan terang maupun gelap.
+  </focus>
+
+  <contrast>
+    Status solid dipilih dari varian gelap (mode terang) dan varian terang (mode gelap) agar
+    teks kecil lolos WCAG AA saat berada di atas padanan `-tint`-nya. Karena itu pasangan
+    berikut tidak boleh ditukar:
+    <pairing rule="permukaan solid → text-kumo-inverse" />
+    <pairing rule="permukaan -tint → warna status solidnya (text-kumo-{status})" />
+  </contrast>
+
+  <semantics>
+    <item>Alert galat memakai role="alert"; status lain role="status".</item>
+    <item>Toast: penampung aria-live="polite", tiap kartu role="status".</item>
+    <item>LoadingOverlay: role="alertdialog" + aria-busy="true" + aria-label dari pesan.</item>
+    <item>Tombol memuat: aria-busy="true".</item>
+    <item>Tab aktif dan tautan navigasi aktif: aria-current="page".</item>
+    <item>Kolom tabel yang bisa diurutkan: aria-sort="ascending | descending | none".</item>
+    <item>Saklar memakai role="switch" + aria-checked.</item>
+    <item>Ikon dekoratif: aria-hidden="true". Tombol ikon selalu punya aria-label.</item>
+    <item>Sidebar dapat ditutup dengan tombol Escape.</item>
+  </semantics>
+</accessibility>
+
+<!-- ====================================================== print and email -->
+<print-and-email>
+  <print>
+    <source path="src/lib/styles/print.css" imported-by="src/routes/(print)/+layout.svelte saja" />
+    <page-rule>@page: A4 potret, margin 10mm.</page-rule>
+    <screen-vs-print>
+      `.no-print` disembunyikan saat mencetak (dipakai toolbar). `.slip-sheet` menjadi lembar
+      putih. Saat dicetak, `body` dipaksa berlatar putih.
+    </screen-vs-print>
+    <grid>
+      `.slip-grid` mengatur slip per baris lewat kelas `.per-row-1` sampai `.per-row-4`;
+      di bawah 640px selalu satu kolom. `.slip-page` memaksa pemisahan halaman, kecuali anak
+      terakhir. Slip memakai `break-inside: avoid`.
+    </grid>
+    <slip-classes>
+      `.slip` (kartu 9px, bingkai 1px), `.slip-head`, `.slip-logo`, `.slip-univ`, `.slip-fak`,
+      `.slip-title`, `.slip-meta`, `.slip-table`, `.slip-subtotal`, `.slip-net`, `.slip-sign`.
+      Semua ukuran memakai satuan piksel kecil dan warna heksadesimal tetap, kecuali
+      `.slip-net` yang memakai var(--color-kumo-brand). `.print-toolbar` memakai
+      var(--color-kumo-contrast) dan var(--color-kumo-inverse).
+    </slip-classes>
+    <note>
+      Blok cetak sengaja memakai satuan dan warna sendiri: ukuran tipografinya jauh di bawah
+      skala layar, dan nilainya tetap agar hasil cetak tidak berubah mengikuti mode layar.
+    </note>
+  </print>
+
+  <email>
+    <source path="src/lib/server/emailtemplate.ts" />
+    <constraint>
+      Klien email tidak mendukung CSS custom property, sehingga token tidak dapat dipakai di
+      sini. Semua gaya ditulis inline, memakai satu tumpukan font (Arial, Helvetica, sans-serif),
+      palet heksadesimal tetap, dan tata letak berbasis tabel dengan role="presentation".
+      Lebar kontainer dibatasi 520px dan logo disematkan sebagai data URI agar tidak ada aset
+      jarak jauh.
+    </constraint>
+    <note>
+      Slip cetak dan slip email adalah dua penanda terpisah untuk data yang sama: yang cetak
+      memakai komponen PayslipCard, yang email memakai modul ini.
+    </note>
+  </email>
+</print-and-email>
+
+<!-- ================================================================ rules -->
+<rules>
+  <note>Aturan yang berlaku di seluruh codebase. Semua ini dapat diverifikasi dengan pencarian.</note>
+  <rule id="semantic-tokens-only">
+    Hanya token semantik (`bg-kumo-*`, `text-kumo-*`, `ring-kumo-*`, `shadow-kumo`,
+    `border-kumo-*`, `divide-kumo-*`). Warna palet Tailwind mentah (mis. `bg-blue-500`,
+    `text-gray-900`, `bg-white`, `text-slate-300`) tidak dipakai.
+  </rule>
+  <rule id="no-dark-variant">Tidak ada varian `dark:` di mana pun.</rule>
+  <rule id="pairing-inverse">Bidang solid selalu berpasangan dengan `text-kumo-inverse`.</rule>
+  <rule id="pairing-status">Bidang `-tint` selalu berpasangan dengan warna status solidnya.</rule>
+  <rule id="content-text-14px">Teks isi dan kontrol 14px (`text-sm`); 16px ke atas hanya untuk judul.</rule>
+  <rule id="sentence-case">Tidak ada `uppercase` sebagai gaya.</rule>
+  <rule id="no-tracking">Tidak ada kelas `tracking-*` maupun override `letter-spacing`.</rule>
+  <rule id="no-font-bold">Tidak ada `font-bold` atau `font-extrabold`.</rule>
+  <rule id="ring-over-border">Tepi memakai `ring-*`; `border` hanya untuk memisahkan elemen yang menempel/menempel saat menggulir.</rule>
+  <rule id="no-border-with-shadow">Tidak ada elemen yang memakai `border` bersamaan dengan bayangan.</rule>
+  <rule id="concentric-radii">Radius dalam mengikuti radius luar dikurangi padding.</rule>
+  <rule id="compositor-only-motion">Animasi masuk/keluar hanya memakai `transform` dan `opacity`.</rule>
+  <rule id="respect-reduced-motion">`prefers-reduced-motion` dihormati, baik di CSS global maupun di komponen yang mengukur preferensi di JavaScript.</rule>
+  <rule id="icons-aligned">Ikon selalu `shrink-0` dan sejajar tengah terhadap barisnya.</rule>
+</rules>
+
+<!-- ============================================== reproduction checklist -->
+<reproduction-checklist>
+  <note>
+    Untuk membangun ulang sistem ini dari nol, urutan berikut sudah cukup — tidak ada langkah
+    yang bergantung pada artefak di luar repo ini.
+  </note>
+  <step order="1">Pasang Tailwind CSS v4 lewat plugin Vite, dengan konfigurasi CSS-first (tanpa file config JS).</step>
+  <step order="2">Muat font: `Outfit` dari Google Fonts, dan `Gama Serif` lewat `@font-face` dari berkas lokal; daftarkan sebagai `--font-sans` dan `--font-serif`.</step>
+  <step order="3">Deklarasikan seluruh token di dalam blok `@theme`, memakai `light-dark()` untuk setiap token warna.</step>
+  <step order="4">Tetapkan `color-scheme` dari atribut `data-mode` pada elemen akar, dan tulis `data-mode="light"` di dokumen HTML.</step>
+  <step order="5">Tambahkan blok `@layer base`: latar dan warna teks body, aturan kursor, lingkaran fokus tautan, gaya dasar `dialog` beserta animasinya dan gaya `::backdrop`.</step>
+  <step order="6">Tambahkan keyframes dan kelas animasi bersama (`.animate-in`, `.animate-out`, `.loading-*`) beserta kelas `.select-control`.</step>
+  <step order="7">Tambahkan kelas `.kumo-tooltip` dan `.kumo-tooltip-arrow` untuk action tooltip.</step>
+  <step order="8">Buat kelas bersama di satu modul: isian, select, label, kartu, tautan.</step>
+  <step order="9">Bangun atom lebih dulu (Alert, Badge, Button, EmptyState, FormField, Money, MoneyInput, PageHeader, Pagination, Skeleton, StatCard, TableAction, TableLink, dan seterusnya), lalu molekul, lalu organisme.</step>
+  <step order="10">Susun ketiga template layout: root (token + overlay global), (app) (shell + breadcrumb + toast), dan (print) (toolbar + lembar slip).</step>
+  <step order="11">Tambahkan `print.css` dan modul template email sebagai dua jalur keluaran terpisah.</step>
+  <step order="12">Terapkan pola komposisi halaman A–G; periksa hasilnya dengan menjalankan `npm run check` dan `npm run build`.</step>
+</reproduction-checklist>
+
 </design-system>
+</design-spec>
