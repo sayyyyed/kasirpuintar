@@ -29,6 +29,7 @@ import {
 } from "@/services/repositories/expenseRepository";
 import { updateShiftTotals } from "@/services/repositories/shiftRepository";
 import { pullChanges } from "@/services/sync";
+import { sanitizeCurrency } from "@/utils/currency";
 
 const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
@@ -143,7 +144,7 @@ export default function InventoryScreen() {
 
   const handleSaveEntry = async () => {
     if (!shift || !user) return;
-    const amount = Number(entryAmount);
+    const amount = sanitizeCurrency(entryAmount);
     if (!entryName.trim()) {
       Alert.alert("Error", "Isi keterangan terlebih dahulu");
       return;
@@ -190,12 +191,12 @@ export default function InventoryScreen() {
     <View>
       {/* Header */}
       <View className="px-6 pt-6 pb-4">
-        <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
+        <Text className="text-sm font-sans-semibold text-kumo-subtle  ">
           Pantau Stok & Kas
         </Text>
         <Text
-          className="text-2xl font-sans-extrabold text-foreground mt-1"
-          style={{ letterSpacing: -0.5 }}
+          className="text-2xl font-sans-semibold text-kumo-default mt-1"
+
         >
           Stok
         </Text>
@@ -203,42 +204,42 @@ export default function InventoryScreen() {
 
       {/* Balance Cards */}
       <View className="px-6 mb-4">
-        <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+        <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-3">
           Balance Shift Ini
         </Text>
         <View className="flex-row gap-3">
-          <View className="flex-1 bg-secondary-50 rounded-lg p-5">
-            <View className="w-10 h-10 rounded-full bg-secondary-100 items-center justify-center mb-3">
+          <View className="flex-1 bg-kumo-success-tint rounded-lg p-5">
+            <View className="w-10 h-10 rounded-full bg-kumo-success-tint items-center justify-center mb-3">
               <TrendingUp
                 size={18}
                 color={Colors.secondary.DEFAULT}
                 strokeWidth={2.5}
               />
             </View>
-            <Text className="text-xs font-sans-medium text-gray-500 uppercase tracking-wider">
+            <Text className="text-xs font-sans-medium text-kumo-subtle  ">
               Pemasukan
             </Text>
             <Text
-              className="text-lg font-sans-extrabold text-foreground mt-1"
-              style={{ letterSpacing: -0.5 }}
+              className="text-lg font-sans-semibold text-kumo-default mt-1"
+
             >
               {fmt(pemasukan)}
             </Text>
           </View>
-          <View className="flex-1 bg-accent-50 rounded-lg p-5">
-            <View className="w-10 h-10 rounded-full bg-accent-100 items-center justify-center mb-3">
+          <View className="flex-1 bg-kumo-warning-tint rounded-lg p-5">
+            <View className="w-10 h-10 rounded-full bg-kumo-warning-tint items-center justify-center mb-3">
               <TrendingDown
                 size={18}
                 color={Colors.accent.DEFAULT}
                 strokeWidth={2.5}
               />
             </View>
-            <Text className="text-xs font-sans-medium text-gray-500 uppercase tracking-wider">
+            <Text className="text-xs font-sans-medium text-kumo-subtle  ">
               Pengeluaran
             </Text>
             <Text
-              className="text-lg font-sans-extrabold text-foreground mt-1"
-              style={{ letterSpacing: -0.5 }}
+              className="text-lg font-sans-semibold text-kumo-default mt-1"
+
             >
               {fmt(pengeluaran)}
             </Text>
@@ -248,38 +249,38 @@ export default function InventoryScreen() {
         {/* Tambah */}
         <View className="flex-row gap-2 mt-4">
           <Pressable
-            className={`flex-1 h-14 rounded-md items-center justify-center flex-row ${
-              shift ? "bg-secondary" : "bg-gray-300"
+            className={`flex-1 h-14 rounded-lg items-center justify-center flex-row ${
+              shift ? "bg-kumo-success" : "bg-kumo-fill"
             }`}
             disabled={!shift}
             onPress={() => openEntry("income")}
           >
             <ArrowDownToLine size={20} color="#FFF" strokeWidth={2.5} />
-            <Text className="ml-2 text-base font-sans-bold text-white">
+            <Text className="ml-2 text-base font-sans-semibold text-kumo-inverse">
               Pemasukan
             </Text>
           </Pressable>
           <Pressable
-            className={`flex-1 h-14 rounded-md items-center justify-center flex-row ${
-              shift ? "bg-accent" : "bg-gray-300"
+            className={`flex-1 h-14 rounded-lg items-center justify-center flex-row ${
+              shift ? "bg-kumo-warning" : "bg-kumo-fill"
             }`}
             disabled={!shift}
             onPress={() => openEntry("expense")}
           >
             <ArrowUpFromLine size={20} color="#FFF" strokeWidth={2.5} />
-            <Text className="ml-2 text-base font-sans-bold text-white">
+            <Text className="ml-2 text-base font-sans-semibold text-kumo-inverse">
               Pengeluaran
             </Text>
           </Pressable>
         </View>
         {!shift && (
-          <View className="flex-row items-center mt-3 bg-accent-50 rounded-md px-4 py-3">
+          <View className="flex-row items-center mt-3 bg-kumo-warning-tint rounded-md px-4 py-3">
             <AlertTriangle
               size={16}
               color={Colors.accent.DEFAULT}
               strokeWidth={2}
             />
-            <Text className="ml-2 flex-1 text-xs font-sans-semibold text-accent-600">
+            <Text className="ml-2 flex-1 text-xs font-sans-semibold text-kumo-warning">
               Mulai shift di Dashboard untuk mencatat pemasukan/pengeluaran
             </Text>
           </View>
@@ -288,16 +289,16 @@ export default function InventoryScreen() {
 
       {/* Entry List */}
       <View className="px-6 mb-6">
-        <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+        <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-3">
           Riwayat Kas ({entries.length})
         </Text>
         {entries.length === 0 ? (
-          <View className="bg-muted rounded-lg p-6 items-center">
+          <View className="bg-kumo-base border border-kumo-hairline rounded-lg p-6 items-center">
             <Wallet size={28} color={Colors.gray[300]} strokeWidth={2} />
-            <Text className="text-sm font-sans-medium text-gray-400 mt-3">
+            <Text className="text-sm font-sans-medium text-kumo-subtle mt-3">
               Belum ada catatan kas
             </Text>
-            <Text className="text-xs font-sans text-gray-400 mt-1">
+            <Text className="text-xs font-sans text-kumo-subtle mt-1">
               Tambah pemasukan atau pengeluaran shift ini
             </Text>
           </View>
@@ -307,11 +308,11 @@ export default function InventoryScreen() {
             return (
               <View
                 key={e.id}
-                className="flex-row items-center py-3 border-b-2 border-muted"
+                className="flex-row items-center py-3 border-b border-kumo-line"
               >
                 <View
                   className={`w-10 h-10 rounded-full items-center justify-center ${
-                    isIncome ? "bg-secondary-100" : "bg-accent-100"
+                    isIncome ? "bg-kumo-success-tint" : "bg-kumo-warning-tint"
                   }`}
                 >
                   {isIncome ? (
@@ -329,10 +330,10 @@ export default function InventoryScreen() {
                   )}
                 </View>
                 <View className="ml-3 flex-1">
-                  <Text className="text-sm font-sans-bold text-foreground">
+                  <Text className="text-sm font-sans-semibold text-kumo-default">
                     {e.name}
                   </Text>
-                  <Text className="text-xs font-sans text-gray-400 mt-0.5">
+                  <Text className="text-xs font-sans text-kumo-subtle mt-0.5">
                     {e.category} ·{" "}
                     {e.createdAt
                       ? e.createdAt.toLocaleTimeString("id-ID", {
@@ -344,15 +345,15 @@ export default function InventoryScreen() {
                 </View>
                 <View className="items-end">
                   <Text
-                    className={`text-sm font-sans-extrabold ${
-                      isIncome ? "text-secondary-600" : "text-accent-600"
+                    className={`text-sm font-sans-semibold ${
+                      isIncome ? "text-kumo-success" : "text-kumo-warning"
                     }`}
                   >
                     {isIncome ? "+" : "-"}
                     {fmt(e.amount || 0)}
                   </Text>
                   <Pressable onPress={() => handleDeleteEntry(e)} hitSlop={8}>
-                    <Text className="text-[10px] font-sans-semibold text-gray-400 uppercase mt-1">
+                    <Text className="text-[10px] font-sans-semibold text-kumo-subtle  mt-1">
                       Hapus
                     </Text>
                   </Pressable>
@@ -365,29 +366,29 @@ export default function InventoryScreen() {
 
       {/* Product section */}
       <View className="px-6 mb-3">
-        <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
+        <Text className="text-sm font-sans-semibold text-kumo-subtle  ">
           Daftar Produk
         </Text>
       </View>
 
       {lowStockCount > 0 && (
-        <View className="mx-6 mb-3 flex-row items-center bg-accent-50 rounded-lg px-4 py-3">
+        <View className="mx-6 mb-3 flex-row items-center bg-kumo-warning-tint rounded-lg px-4 py-3">
           <AlertTriangle
             size={18}
             color={Colors.accent.DEFAULT}
             strokeWidth={2}
           />
-          <Text className="ml-2 text-sm font-sans-semibold text-accent-600">
+          <Text className="ml-2 text-sm font-sans-semibold text-kumo-warning">
             {lowStockCount} produk stok rendah
           </Text>
         </View>
       )}
 
       <View className="px-6 pb-4">
-        <View className="flex-row items-center bg-muted rounded-md px-4">
+        <View className="flex-row items-center bg-kumo-fill rounded-md px-4">
           <Search size={18} color={Colors.gray[400]} strokeWidth={2} />
           <TextInput
-            className="flex-1 h-12 ml-3 text-base text-foreground font-sans"
+            className="flex-1 h-12 ml-3 text-base text-kumo-default font-sans"
             placeholder="Cari produk..."
             placeholderTextColor={Colors.gray[400]}
             value={search}
@@ -399,16 +400,16 @@ export default function InventoryScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-kumo-base">
       {products.length === 0 && search === "" ? (
         <ScrollView keyboardShouldPersistTaps="handled">
           {header}
           <View className="items-center justify-center py-12">
             <Package size={44} color={Colors.gray[300]} strokeWidth={1.5} />
-            <Text className="text-base font-sans-medium text-gray-400 mt-4">
+            <Text className="text-base font-sans-medium text-kumo-subtle mt-4">
               Belum ada data produk
             </Text>
-            <Text className="text-sm font-sans text-gray-400 mt-1 text-center px-8">
+            <Text className="text-sm font-sans text-kumo-subtle mt-1 text-center px-8">
               Produk akan muncul setelah ditambahkan pemilik & disinkronkan
             </Text>
           </View>
@@ -422,24 +423,24 @@ export default function InventoryScreen() {
           renderItem={({ item }: { item: any }) => {
             const isLow = (item.stock || 0) <= 10;
             return (
-              <View className="flex-row items-center px-6 py-4 border-b-2 border-muted">
+              <View className="flex-row items-center px-6 py-4 border-b border-kumo-line">
                 <View className="flex-1">
-                  <Text className="text-base font-sans-bold text-foreground">
+                  <Text className="text-base font-sans-semibold text-kumo-default">
                     {item.name}
                   </Text>
-                  <Text className="text-xs font-sans text-gray-500 mt-0.5">
+                  <Text className="text-xs font-sans text-kumo-subtle mt-0.5">
                     {categoryNames[item.category_id] || "Tanpa Kategori"}
                   </Text>
                 </View>
                 <View className="items-end">
                   <Text
-                    className={`text-lg font-sans-extrabold ${
-                      isLow ? "text-red-500" : "text-foreground"
+                    className={`text-lg font-sans-semibold ${
+                      isLow ? "text-kumo-danger" : "text-kumo-default"
                     }`}
                   >
                     {item.stock || 0}
                   </Text>
-                  <Text className="text-xs font-sans text-gray-400">
+                  <Text className="text-xs font-sans text-kumo-subtle">
                     {isLow ? "Stok rendah" : "pcs"}
                   </Text>
                 </View>
@@ -459,8 +460,8 @@ export default function InventoryScreen() {
           {/* Type picker */}
           <View className="flex-row gap-2 mb-4">
             <Pressable
-              className={`flex-1 h-14 rounded-md items-center justify-center flex-row ${
-                entryType === "income" ? "bg-secondary" : "bg-muted"
+              className={`flex-1 h-14 rounded-lg items-center justify-center flex-row ${
+                entryType === "income" ? "bg-kumo-success" : "bg-kumo-fill"
               }`}
               onPress={() => {
                 setEntryType("income");
@@ -473,16 +474,16 @@ export default function InventoryScreen() {
                 strokeWidth={2.5}
               />
               <Text
-                className={`ml-2 text-sm font-sans-bold ${
-                  entryType === "income" ? "text-white" : "text-gray-700"
+                className={`ml-2 text-sm font-sans-semibold ${
+                  entryType === "income" ? "text-kumo-inverse" : "text-kumo-default"
                 }`}
               >
                 Pemasukan
               </Text>
             </Pressable>
             <Pressable
-              className={`flex-1 h-14 rounded-md items-center justify-center flex-row ${
-                entryType === "expense" ? "bg-accent" : "bg-muted"
+              className={`flex-1 h-14 rounded-lg items-center justify-center flex-row ${
+                entryType === "expense" ? "bg-kumo-warning" : "bg-kumo-fill"
               }`}
               onPress={() => {
                 setEntryType("expense");
@@ -495,8 +496,8 @@ export default function InventoryScreen() {
                 strokeWidth={2.5}
               />
               <Text
-                className={`ml-2 text-sm font-sans-bold ${
-                  entryType === "expense" ? "text-white" : "text-gray-700"
+                className={`ml-2 text-sm font-sans-semibold ${
+                  entryType === "expense" ? "text-kumo-inverse" : "text-kumo-default"
                 }`}
               >
                 Pengeluaran
@@ -505,7 +506,7 @@ export default function InventoryScreen() {
           </View>
 
           {/* Kategori chips */}
-          <Text className="text-sm font-sans-semibold text-gray-500 mb-2">
+          <Text className="text-sm font-sans-semibold text-kumo-subtle mb-2">
             Kategori
           </Text>
           <View className="flex-row flex-wrap gap-2 mb-4">
@@ -514,13 +515,13 @@ export default function InventoryScreen() {
                 <Pressable
                   key={cat}
                   className={`px-4 py-2 rounded-md ${
-                    entryCat === cat ? "bg-primary" : "bg-muted"
+                    entryCat === cat ? "bg-kumo-brand" : "bg-kumo-fill"
                   }`}
                   onPress={() => setEntryCat(cat)}
                 >
                   <Text
                     className={`text-sm font-sans-semibold ${
-                      entryCat === cat ? "text-white" : "text-gray-600"
+                      entryCat === cat ? "text-kumo-inverse" : "text-kumo-subtle"
                     }`}
                   >
                     {cat}
@@ -554,14 +555,14 @@ export default function InventoryScreen() {
               onChangeText={setEntryNote}
             />
             <Pressable
-              className={`h-16 rounded-md items-center justify-center flex-row mt-2 ${
-                saving ? "bg-primary-600" : "bg-primary"
+              className={`h-16 rounded-lg items-center justify-center flex-row mt-2 ${
+                saving ? "bg-kumo-brand" : "bg-kumo-brand"
               }`}
               onPress={handleSaveEntry}
               disabled={saving}
             >
               <Plus size={20} color="#FFF" strokeWidth={2.5} />
-              <Text className="ml-2 text-lg font-sans-bold text-white">
+              <Text className="ml-2 text-lg font-sans-semibold text-kumo-inverse">
                 {saving ? "Menyimpan..." : "Simpan Catatan"}
               </Text>
             </Pressable>

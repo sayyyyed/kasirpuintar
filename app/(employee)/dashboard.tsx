@@ -138,17 +138,17 @@ export default function EmployeeDashboard() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-kumo-base">
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
         {/* Header */}
         <View className="px-6 pt-6 pb-4 flex-row items-end justify-between">
           <View>
-            <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider">
+            <Text className="text-sm font-sans-semibold text-kumo-subtle  ">
               Selamat Datang
             </Text>
             <Text
-              className="text-3xl font-sans-extrabold text-foreground mt-1"
-              style={{ letterSpacing: -0.6 }}
+              className="text-3xl font-sans-semibold text-kumo-default mt-1"
+
             >
               {user?.name || "Kasir"}
             </Text>
@@ -163,22 +163,22 @@ export default function EmployeeDashboard() {
 
         {/* Live Clock Display */}
         <View className="px-6 pb-2">
-          <View className="bg-muted rounded-lg p-5 flex-row items-center justify-between">
+          <View className="bg-kumo-base border border-kumo-hairline rounded-lg p-5 flex-row items-center justify-between">
             <View className="flex-row items-center">
-              <View className="w-10 h-10 rounded-full bg-white items-center justify-center">
+              <View className="w-10 h-10 rounded-full bg-kumo-base items-center justify-center">
                 <Clock size={18} color={Colors.primary.DEFAULT} strokeWidth={2.5} />
               </View>
               <View className="ml-3">
-                <Text className="text-[10px] font-sans-bold text-gray-400 uppercase tracking-wider">
+                <Text className="text-[10px] font-sans-semibold text-kumo-subtle  ">
                   Jam Kerja Lokal
                 </Text>
-                <Text className="text-sm font-sans-bold text-foreground mt-0.5">
+                <Text className="text-sm font-sans-semibold text-kumo-default mt-0.5">
                   {formattedDate}
                 </Text>
               </View>
             </View>
-            <View className="bg-primary px-4 py-2 rounded-md">
-              <Text className="text-base font-sans-extrabold text-white tracking-wider">
+            <View className="bg-kumo-brand px-4 py-2 rounded-md">
+              <Text className="text-base font-sans-semibold text-kumo-inverse ">
                 {formattedClock}
               </Text>
             </View>
@@ -188,20 +188,20 @@ export default function EmployeeDashboard() {
         {!shift ? (
           /* No active shift */
           <View className="px-6 mb-6">
-            <View className="bg-muted rounded-lg p-8 items-center">
+            <View className="bg-kumo-base border border-kumo-hairline rounded-lg p-8 items-center">
               <Play size={32} color={Colors.primary.DEFAULT} strokeWidth={2} />
-              <Text className="text-base font-sans-bold text-foreground mt-4 text-center">
+              <Text className="text-base font-sans-semibold text-kumo-default mt-4 text-center">
                 Belum ada shift aktif
               </Text>
-              <Text className="text-sm font-sans text-gray-500 mt-1 text-center">
+              <Text className="text-sm font-sans text-kumo-subtle mt-1 text-center">
                 Tekan tombol di bawah untuk memulai shift
               </Text>
               <Pressable
-                className="h-14 rounded-md bg-primary items-center justify-center mt-6 px-8"
+                className="h-14 rounded-lg bg-kumo-brand shadow-kumo-primary items-center justify-center mt-6 px-8"
                 onPress={handleClockIn}
                 disabled={isClocking}
               >
-                <Text className="text-base font-sans-bold text-white">
+                <Text className="text-base font-sans-semibold text-kumo-inverse">
                   {isClocking ? "Memulai..." : "Mulai Shift"}
                 </Text>
               </Pressable>
@@ -212,23 +212,23 @@ export default function EmployeeDashboard() {
           <>
             {/* Shift Timer Card */}
             <View className="px-6 mb-6">
-              <View className="bg-primary rounded-lg p-6">
-                <View className="absolute top-3 right-3 w-20 h-20 rounded-full bg-white opacity-5" />
-                <View className="absolute bottom-4 right-16 w-12 h-12 rounded-lg bg-white opacity-5 rotate-45" />
+              <View className="bg-kumo-brand rounded-lg p-6">
+                <View className="absolute top-3 right-3 w-20 h-20 rounded-full bg-kumo-base opacity-5" />
+                <View className="absolute bottom-4 right-16 w-12 h-12 rounded-lg bg-kumo-base opacity-5 rotate-45" />
 
                 <View className="flex-row items-center mb-3">
                   <Timer size={20} color="#FFFFFF" strokeWidth={2.5} />
-                  <Text className="ml-2 text-sm font-sans-semibold text-white uppercase tracking-wider opacity-80">
+                  <Text className="ml-2 text-sm font-sans-semibold text-kumo-inverse   opacity-80">
                     Durasi Shift
                   </Text>
                 </View>
                 <Text
-                  className="text-4xl font-sans-extrabold text-white"
-                  style={{ letterSpacing: -1.5 }}
+                  className="text-4xl font-sans-semibold text-kumo-inverse"
+
                 >
                   {formattedTime}
                 </Text>
-                <Text className="text-sm font-sans text-white opacity-60 mt-2">
+                <Text className="text-sm font-sans text-kumo-inverse opacity-60 mt-2">
                   Mulai pukul{" "}
                   {shift?.clockInAt
                     ? shift.clockInAt.toLocaleTimeString("id-ID", {
@@ -243,7 +243,7 @@ export default function EmployeeDashboard() {
 
             {/* Stats Row */}
             <View className="px-6 mb-6">
-              <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+              <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-3">
                 Shift Ini
               </Text>
               <View className="flex-row gap-3">
@@ -256,12 +256,12 @@ export default function EmployeeDashboard() {
                     />
                   </IconCircle>
                   <Text
-                    className="text-2xl font-sans-bold text-foreground mt-3"
-                    style={{ letterSpacing: -0.5 }}
+                    className="text-2xl font-sans-semibold text-kumo-default mt-3"
+
                   >
                     {fmt(todayRevenue)}
                   </Text>
-                  <Text className="text-xs font-sans-medium text-gray-500 uppercase tracking-wider mt-1">
+                  <Text className="text-xs font-sans-medium text-kumo-subtle   mt-1">
                     Pendapatan
                   </Text>
                 </Card>
@@ -270,8 +270,8 @@ export default function EmployeeDashboard() {
                   <Card color="green" className="flex-1">
                     <View className="flex-row items-center justify-between">
                       <Text
-                        className="text-2xl font-sans-bold text-foreground"
-                        style={{ letterSpacing: -0.5 }}
+                        className="text-2xl font-sans-semibold text-kumo-default"
+
                       >
                         {todayCount}
                       </Text>
@@ -283,15 +283,15 @@ export default function EmployeeDashboard() {
                         />
                       </IconCircle>
                     </View>
-                    <Text className="text-xs font-sans-medium text-gray-500 uppercase tracking-wider mt-1">
+                    <Text className="text-xs font-sans-medium text-kumo-subtle   mt-1">
                       Transaksi
                     </Text>
                   </Card>
                   <Card color="amber" className="flex-1">
                     <View className="flex-row items-center justify-between">
                       <Text
-                        className="text-2xl font-sans-bold text-foreground"
-                        style={{ letterSpacing: -0.5 }}
+                        className="text-2xl font-sans-semibold text-kumo-default"
+
                       >
                         {todayItems}
                       </Text>
@@ -303,7 +303,7 @@ export default function EmployeeDashboard() {
                         />
                       </IconCircle>
                     </View>
-                    <Text className="text-xs font-sans-medium text-gray-500 uppercase tracking-wider mt-1">
+                    <Text className="text-xs font-sans-medium text-kumo-subtle   mt-1">
                       Item Terjual
                     </Text>
                   </Card>
@@ -313,11 +313,11 @@ export default function EmployeeDashboard() {
 
             {/* Quick Actions */}
             <View className="px-6 mb-6">
-              <Text className="text-sm font-sans-semibold text-gray-400 uppercase tracking-wider mb-3">
+              <Text className="text-sm font-sans-semibold text-kumo-subtle   mb-3">
                 Aksi Cepat
               </Text>
               <Pressable
-                className="flex-row items-center bg-muted rounded-lg p-4"
+                className="flex-row items-center bg-kumo-base border border-kumo-hairline rounded-lg p-4"
                 onPress={() => goTo(1)}
               >
                 <IconCircle color="primary" size="sm">
@@ -328,10 +328,10 @@ export default function EmployeeDashboard() {
                   />
                 </IconCircle>
                 <View className="ml-4 flex-1">
-                  <Text className="text-base font-sans-bold text-foreground">
+                  <Text className="text-base font-sans-semibold text-kumo-default">
                     Buka Kasir
                   </Text>
-                  <Text className="text-xs font-sans text-gray-500">
+                  <Text className="text-xs font-sans text-kumo-subtle">
                     Mulai transaksi baru
                   </Text>
                 </View>
@@ -342,18 +342,18 @@ export default function EmployeeDashboard() {
             {/* Payroll Card */}
             {payrollEnabled && shift && hourlyRate > 0 && (
               <View className="px-6 mb-6">
-                <View className="bg-secondary-50 rounded-lg p-4 flex-row items-center">
-                  <View className="w-12 h-12 rounded-full bg-secondary-100 items-center justify-center mr-4">
+                <View className="bg-kumo-success-tint rounded-lg p-4 flex-row items-center">
+                  <View className="w-12 h-12 rounded-full bg-kumo-success-tint items-center justify-center mr-4">
                     <Banknote size={22} color={Colors.secondary.DEFAULT} strokeWidth={2.5} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-xs font-sans-semibold text-gray-400 uppercase tracking-wider">
+                    <Text className="text-xs font-sans-semibold text-kumo-subtle  ">
                       Estimasi Gaji Shift Ini
                     </Text>
-                    <Text className="text-xl font-sans-extrabold text-secondary mt-0.5">
+                    <Text className="text-xl font-sans-semibold text-kumo-success mt-0.5">
                       {fmt(Math.round((elapsed / 3600) * hourlyRate))}
                     </Text>
-                    <Text className="text-[10px] font-sans text-gray-500 mt-0.5">
+                    <Text className="text-[10px] font-sans text-kumo-subtle mt-0.5">
                       {fmt(hourlyRate)}/jam · {Math.floor(elapsed / 3600)}j {Math.floor((elapsed % 3600) / 60)}m kerja
                     </Text>
                   </View>
@@ -364,11 +364,11 @@ export default function EmployeeDashboard() {
             {/* Clock Out */}
             <View className="px-6">
               <Pressable
-                className="h-14 rounded-md items-center justify-center border-4 border-red-500 flex-row"
+                className="h-14 rounded-lg items-center justify-center border border-kumo-danger flex-row"
                 onPress={handleClockOut}
               >
                 <LogOut size={20} color="#EF4444" strokeWidth={2.5} />
-                <Text className="ml-2 text-base font-sans-bold text-red-500">
+                <Text className="ml-2 text-base font-sans-semibold text-kumo-danger">
                   Akhiri Shift
                 </Text>
               </Pressable>

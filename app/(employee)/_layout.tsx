@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { View, Text, Pressable, Animated } from "react-native";
-import PagerView from "react-native-pager-view";
+import PagerView from "@/components/PagerView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   LayoutDashboard,
@@ -23,7 +23,7 @@ const TABS = [
 ];
 
 export default function EmployeeLayout() {
-  const pagerRef = useRef<PagerView>(null);
+  const pagerRef = useRef<any>(null);
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -43,7 +43,7 @@ export default function EmployeeLayout() {
 
   return (
     <EmployeeTabContext.Provider value={{ goTo }}>
-      <View className="flex-1 bg-white">
+      <View className="flex-1 bg-kumo-canvas">
         <PagerView
           ref={pagerRef}
           style={{ flex: 1 }}
@@ -70,7 +70,7 @@ export default function EmployeeLayout() {
       </PagerView>
 
       <View
-        className="bg-white border-t-2 border-muted items-center"
+        className="bg-kumo-base border-t border-kumo-line items-center"
         style={{
           paddingBottom: Math.max(insets.bottom, 12),
         }}
@@ -78,7 +78,7 @@ export default function EmployeeLayout() {
         <View className="w-full" style={{ maxWidth: 500 }}>
         <View className="flex-row relative pt-2 pb-1">
           <Animated.View
-            className="absolute top-0 h-1 bg-primary rounded-full"
+            className="absolute top-0 h-1 bg-kumo-brand rounded-full"
             style={{
               left: indicatorLeft,
               width: `${tabWidth}%`,
@@ -102,10 +102,10 @@ export default function EmployeeLayout() {
                 <Text
                   className={`text-[10px] mt-1 ${
                     active
-                      ? "text-primary font-sans-bold"
-                      : "text-gray-400 font-sans-medium"
+                      ? "text-kumo-brand font-sans-semibold"
+                      : "text-kumo-subtle font-sans-medium"
                   }`}
-                  style={{ textTransform: "uppercase", letterSpacing: 0.5 }}
+
                 >
                   {tab.label}
                 </Text>
