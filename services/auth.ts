@@ -3,23 +3,48 @@ import { Q } from "@nozbe/watermelondb";
 import { database } from "@/db";
 import { supabase } from "@/services/supabase";
 import { enqueueMutation } from "@/services/repositories/helpers";
+import { pullChanges } from "@/services/sync";
+import { sanitizeCurrency } from "@/utils/currency";
 
 async function hashPin(pin: string): Promise<string> {
   return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, pin);
+}
+
+async function ensurePinAvailable(pin: string, excludeUserId?: string) {
+  const pinHash = await hashPin(pin);
+  const users = await database.get("users").query(
+    Q.where("pin_hash", Q.eq(pinHash)),
+    Q.where("active", Q.eq(true)),
+    Q.where("deleted_at", Q.eq(null)),
+  ).fetch();
+  if ((users as any[]).some((user) => user.id !== excludeUserId)) {
+    throw new Error("PIN sudah dipakai oleh karyawan lain");
+  }
+  return pinHash;
 }
 
 export async function signInWithPin(pin: string) {
   const hashedPin = await hashPin(pin);
 
   try {
-    const records = await database
-      .get("users")
-      .query(
-        Q.where("pin_hash", Q.eq(hashedPin)),
-        Q.where("active", Q.eq(true)),
-        Q.where("deleted_at", Q.eq(null))
-      )
-      .fetch();
+    const findLocalUser = () =>
+      database
+        .get("users")
+        .query(
+          Q.where("pin_hash", Q.eq(hashedPin)),
+          Q.where("active", Q.eq(true)),
+          Q.where("deleted_at", Q.eq(null))
+        )
+        .fetch();
+
+    let records = await findLocalUser();
+
+    // Device baru belum memiliki users lokal. Karena backend tidak memakai
+    // row-level policies, lakukan bootstrap pull sebelum validasi PIN.
+    if (records.length === 0) {
+      await pullChanges();
+      records = await findLocalUser();
+    }
 
     const localUser = (records as any[])[0];
     if (localUser) {
@@ -167,6 +192,7 @@ async function seedUserToLocalDB(profile: any) {
         email: profile.email || "",
         role: profile.role || "owner",
         pin_hash: profile.pin_hash || null,
+        pin: profile.pin || null,
         active: profile.active ?? true,
         created_at: now,
         updated_at: now,
@@ -182,7 +208,11 @@ export async function createEmployee(
   pin: string,
   hourlyRate?: number
 ) {
-  const hashedPin = await hashPin(pin);
+  const normalizedPin = pin.replace(/\D/g, "");
+  if (normalizedPin.length < 4 || normalizedPin.length > 6) {
+    throw new Error("PIN harus 4-6 digit");
+  }
+  const hashedPin = await ensurePinAvailable(normalizedPin);
   const id = Crypto.randomUUID();
   const now = Date.now();
 
@@ -192,7 +222,8 @@ export async function createEmployee(
     email: email.toLowerCase().trim(),
     role: "cashier",
     pin_hash: hashedPin,
-    hourly_rate: hourlyRate ?? null,
+    pin: normalizedPin,
+    hourly_rate: hourlyRate == null ? null : sanitizeCurrency(hourlyRate),
     active: true,
     created_at: now,
     updated_at: now,
@@ -207,7 +238,42 @@ export async function createEmployee(
   });
 
   await enqueueMutation("users", id, "upsert", payload);
-  return { data: { id, name: payload.name, email: payload.email, pin }, error: null };
+  return { data: { id, name: payload.name, email: payload.email, pin: normalizedPin }, error: null };
+}
+
+export async function updateEmployeePin(userId: string, pin: string) {
+  const normalizedPin = pin.replace(/\D/g, "");
+  if (normalizedPin.length < 4 || normalizedPin.length > 6) {
+    throw new Error("PIN harus 4-6 digit");
+  }
+
+  const user = await database.get("users").find(userId);
+  const pinHash = await ensurePinAvailable(normalizedPin, userId);
+  const now = Date.now();
+
+  await database.write(async () => {
+    await user.update((u: any) => {
+      u._raw.pin_hash = pinHash;
+      u._raw.pin = normalizedPin;
+      u._raw.updated_at = now;
+    });
+  });
+
+  await enqueueMutation("users", userId, "upsert", {
+    id: userId,
+    name: (user as any).name,
+    email: (user as any).email,
+    role: (user as any).role,
+    pin_hash: pinHash,
+    pin: normalizedPin,
+    hourly_rate: (user as any).hourlyRate ?? null,
+    active: (user as any).active,
+    created_at: (user as any).createdAt?.getTime?.() ?? null,
+    updated_at: now,
+    deleted_at: null,
+  });
+
+  return normalizedPin;
 }
 
 export async function verifyPin(userId: string, pin: string): Promise<boolean> {
