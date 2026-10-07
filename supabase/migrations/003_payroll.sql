@@ -22,9 +22,3 @@ create table if not exists public.payroll_periods (
 
 create index if not exists idx_payroll_periods_user_id on public.payroll_periods (user_id);
 create index if not exists idx_payroll_periods_status on public.payroll_periods (status);
-
-alter table public.payroll_periods enable row level security;
-
-drop policy if exists "payroll_periods_all_authenticated" on public.payroll_periods;
-create policy "payroll_periods_all_authenticated" on public.payroll_periods
-  for all to authenticated using (true) with check (true);
