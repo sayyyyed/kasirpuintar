@@ -18,11 +18,11 @@ interface CardProps extends ViewProps {
 }
 
 const colorClasses: Record<CardColor, string> = {
-  white: "bg-white",
-  blue: "bg-primary-50",
-  green: "bg-secondary-50",
-  amber: "bg-accent-50",
-  muted: "bg-muted",
+  white: "bg-kumo-base shadow-kumo",
+  blue: "bg-kumo-info-tint shadow-kumo",
+  green: "bg-kumo-success-tint shadow-kumo",
+  amber: "bg-kumo-warning-tint shadow-kumo",
+  muted: "bg-kumo-tint",
 };
 
 export function Card({
@@ -43,7 +43,7 @@ export function Card({
     return (
       <AnimatedPressable
         style={animatedStyle}
-        className={`rounded-lg p-6 ${colorClasses[color]} ${extraClass ?? ""}`}
+        className={`rounded-lg p-5 ${colorClasses[color]} ${extraClass ?? ""}`}
         onPress={onPress}
         onPressIn={() => {
           scale.value = withSpring(0.98, { damping: 15, stiffness: 400 });
@@ -60,7 +60,7 @@ export function Card({
 
   return (
     <View
-      className={`rounded-lg p-6 ${colorClasses[color]} ${extraClass ?? ""}`}
+      className={`rounded-lg p-5 ${colorClasses[color]} ${extraClass ?? ""}`}
       {...props}
     >
       {children}

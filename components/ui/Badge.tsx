@@ -9,11 +9,11 @@ interface BadgeProps {
 }
 
 const variantClasses: Record<BadgeVariant, { bg: string; text: string }> = {
-  primary: { bg: "bg-primary-100", text: "text-primary-700" },
-  secondary: { bg: "bg-secondary-100", text: "text-secondary-600" },
-  accent: { bg: "bg-accent-100", text: "text-accent-600" },
-  danger: { bg: "bg-red-100", text: "text-red-700" },
-  muted: { bg: "bg-gray-200", text: "text-gray-700" },
+  primary: { bg: "bg-kumo-info-tint", text: "text-info" },
+  secondary: { bg: "bg-kumo-success-tint", text: "text-kumo-success" },
+  accent: { bg: "bg-kumo-warning-tint", text: "text-kumo-warning" },
+  danger: { bg: "bg-kumo-danger-tint", text: "text-kumo-danger" },
+  muted: { bg: "bg-kumo-fill", text: "text-kumo-subtle" },
 };
 
 export function Badge({ children, variant = "primary" }: BadgeProps) {
@@ -22,7 +22,7 @@ export function Badge({ children, variant = "primary" }: BadgeProps) {
       className={`px-3 py-1 rounded-full ${variantClasses[variant].bg}`}
     >
       <Text
-        className={`text-xs font-sans-semibold uppercase tracking-wider ${variantClasses[variant].text}`}
+        className={`text-xs font-sans-medium ${variantClasses[variant].text}`}
       >
         {children}
       </Text>

@@ -13,20 +13,20 @@ export function Input({ label, error, icon, ...props }: InputProps) {
   return (
     <View className="w-full">
       {label && (
-        <Text className="mb-2 text-sm font-sans-medium text-gray-600 uppercase tracking-wider">
+        <Text className="mb-1.5 text-sm font-sans-medium text-kumo-strong">
           {label}
         </Text>
       )}
       <View
         className={`
-          flex-row items-center rounded-md px-4
-          ${isFocused ? "bg-white border-2 border-primary" : "bg-muted border-2 border-transparent"}
+          flex-row items-center rounded-lg px-3
+          ${isFocused ? "bg-kumo-control border border-kumo-brand" : "bg-kumo-control border border-kumo-line"}
         `}
       >
         {icon && <View className="mr-3">{icon}</View>}
         <TextInput
-          className="flex-1 h-14 text-base text-foreground font-sans"
-          placeholderTextColor="#9CA3AF"
+          className="flex-1 h-10 text-sm text-kumo-default font-sans"
+          placeholderTextColor="#B5B5B5"
           onFocus={(e) => {
             setIsFocused(true);
             props.onFocus?.(e);
@@ -39,7 +39,7 @@ export function Input({ label, error, icon, ...props }: InputProps) {
         />
       </View>
       {error && (
-        <Text className="mt-1 text-sm text-red-500 font-sans">{error}</Text>
+        <Text className="mt-1 text-sm text-kumo-danger font-sans">{error}</Text>
       )}
     </View>
   );

@@ -11,11 +11,11 @@ interface IconCircleProps {
 }
 
 const colorClasses: Record<IconCircleColor, string> = {
-  primary: "bg-primary-100",
-  secondary: "bg-secondary-100",
-  accent: "bg-accent-100",
-  danger: "bg-red-100",
-  muted: "bg-gray-200",
+  primary: "bg-kumo-info-tint",
+  secondary: "bg-kumo-success-tint",
+  accent: "bg-kumo-warning-tint",
+  danger: "bg-kumo-danger-tint",
+  muted: "bg-kumo-fill",
 };
 
 const sizeClasses: Record<IconCircleSize, string> = {

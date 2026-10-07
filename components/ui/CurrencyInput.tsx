@@ -1,10 +1,9 @@
 import React, { useState, useCallback } from "react";
 import { TextInput, View, Text, type TextInputProps } from "react-native";
+import { formatCurrency } from "@/utils/currency";
 
 export function formatRupiah(value: string): string {
-  const num = parseInt(value, 10);
-  if (isNaN(num)) return "";
-  return num.toLocaleString("id-ID");
+  return value ? formatCurrency(value).replace(/^Rp\s*/, "") : "";
 }
 
 interface CurrencyInputProps extends Omit<TextInputProps, "value" | "onChangeText"> {
@@ -31,26 +30,23 @@ export function CurrencyInput({
     [onValueChange]
   );
 
-  const displayValue = isFocused ? value : (value ? formatRupiah(value) : "");
+  const displayValue = value ? formatRupiah(value) : "";
 
   return (
     <View className="w-full">
       {label && (
-        <Text className="mb-2 text-sm font-sans-medium text-gray-600 uppercase tracking-wider">
+        <Text className="mb-1.5 text-sm font-sans-medium text-kumo-strong">
           {label}
         </Text>
       )}
       <View
         className={`flex-row items-center rounded-md px-4 ${
-          isFocused ? "bg-white border-2 border-primary" : "bg-muted border-2 border-transparent"
+          isFocused ? "bg-kumo-control border border-kumo-brand" : "bg-kumo-control border border-kumo-line"
         }`}
       >
-        {!isFocused && value ? (
-          <Text className="mr-1 text-base text-gray-400 font-sans">Rp</Text>
-        ) : null}
         <TextInput
-          className="flex-1 h-14 text-base text-foreground font-sans"
-          placeholderTextColor="#9CA3AF"
+          className="flex-1 h-10 text-sm text-kumo-default font-sans"
+          placeholderTextColor="#B5B5B5"
           keyboardType="number-pad"
           value={displayValue}
           onChangeText={handleChange}
@@ -66,7 +62,7 @@ export function CurrencyInput({
         />
       </View>
       {error && (
-        <Text className="mt-1 text-sm text-red-500 font-sans">{error}</Text>
+        <Text className="mt-1 text-sm text-kumo-danger font-sans">{error}</Text>
       )}
     </View>
   );
