@@ -8,7 +8,11 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
-
+.skills/
+.opencode/
+.uv-cache/
+.uv-python/
+.vscode/
 # Native
 .kotlin/
 *.orig.*
