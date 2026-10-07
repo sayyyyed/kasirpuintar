@@ -7,7 +7,7 @@ const syncColumns = [
 ] as const;
 
 export const schema = appSchema({
-  version: 6,
+  version: 7,
   tables: [
     tableSchema({
       name: "users",
@@ -16,6 +16,7 @@ export const schema = appSchema({
         { name: "email", type: "string", isIndexed: true },
         { name: "role", type: "string" },
         { name: "pin_hash", type: "string", isOptional: true },
+        { name: "pin", type: "string", isOptional: true },
         { name: "hourly_rate", type: "number", isOptional: true },
         { name: "active", type: "boolean" },
         ...syncColumns,

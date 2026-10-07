@@ -92,5 +92,14 @@ export const migrations = schemaMigrations({
         ),
       ],
     },
+    {
+      toVersion: 7,
+      steps: [
+        addColumns({
+          table: "users",
+          columns: [{ name: "pin", type: "string", isOptional: true }],
+        }),
+      ],
+    },
   ],
 });

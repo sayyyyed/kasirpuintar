@@ -20,6 +20,7 @@ export class User extends Model {
   @field("email") email!: string;
   @field("role") role!: Role;
   @field("pin_hash") pinHash?: string;
+  @field("pin") pin?: string;
   @field("hourly_rate") hourlyRate?: number;
   @field("active") active!: boolean;
   @readonly @date("created_at") createdAt!: Date;
