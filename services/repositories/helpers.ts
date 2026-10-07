@@ -1,4 +1,5 @@
 import { database } from "@/db";
+import { schedulePush } from "@/services/sync";
 
 export async function enqueueMutation(
   tableName: string,
@@ -18,4 +19,7 @@ export async function enqueueMutation(
       raw.created_at = Date.now();
     });
   });
+
+  // Online: kirim otomatis (debounced) supaya tidak perlu tombol sync.
+  schedulePush();
 }

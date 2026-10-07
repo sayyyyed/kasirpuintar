@@ -2,6 +2,7 @@ import { database } from "@/db";
 import { Q } from "@nozbe/watermelondb";
 import * as Crypto from "expo-crypto";
 import { enqueueMutation } from "./helpers";
+import { sanitizeCurrency } from "@/utils/currency";
 
 export type ProductInput = {
   sku: string;
@@ -23,8 +24,8 @@ export async function createProduct(input: ProductInput) {
     barcode: input.barcode ?? null,
     name: input.name,
     category_id: input.categoryId,
-    price: input.price,
-    cogs: input.cogs,
+    price: sanitizeCurrency(input.price),
+    cogs: sanitizeCurrency(input.cogs),
     stock: 0,
     image_url: input.imageUrl ?? null,
     active: true,
@@ -56,8 +57,8 @@ export async function updateProduct(
   if (input.barcode !== undefined) updates.barcode = input.barcode;
   if (input.name !== undefined) updates.name = input.name;
   if (input.categoryId !== undefined) updates.category_id = input.categoryId;
-  if (input.price !== undefined) updates.price = input.price;
-  if (input.cogs !== undefined) updates.cogs = input.cogs;
+  if (input.price !== undefined) updates.price = sanitizeCurrency(input.price);
+  if (input.cogs !== undefined) updates.cogs = sanitizeCurrency(input.cogs);
   if (input.imageUrl !== undefined) updates.image_url = input.imageUrl;
 
   await database.write(async () => {
@@ -78,7 +79,7 @@ export async function updateProduct(
     image_url: (product as any).imageUrl ?? null,
     active: (product as any).active,
     created_at: (product as any).createdAt?.getTime?.() ?? null,
-    deleted_at: (product as any).deletedAt?.getTime?.() ?? null,
+    deleted_at: null,
     ...updates,
   });
 }

@@ -1,6 +1,7 @@
 import { database } from "@/db";
 import * as Crypto from "expo-crypto";
 import { enqueueMutation } from "./helpers";
+import { sanitizeCurrency } from "@/utils/currency";
 
 export type CartItem = {
   productId: string;
@@ -22,9 +23,16 @@ export type TransactionInput = {
 export async function createTransaction(input: TransactionInput) {
   const id = Crypto.randomUUID();
   const now = Date.now();
-  const discount = input.discount ?? 0;
+  const discount = sanitizeCurrency(input.discount ?? 0);
+  const paid = sanitizeCurrency(input.paid);
+  const items = input.items.map((item) => ({
+    ...item,
+    price: sanitizeCurrency(item.price),
+    cogs: sanitizeCurrency(item.cogs),
+    qty: Math.max(0, Math.round(item.qty)),
+  }));
 
-  const subtotal = input.items.reduce(
+  const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.qty,
     0
   );
@@ -38,8 +46,8 @@ export async function createTransaction(input: TransactionInput) {
     discount,
     total,
     payment_method: input.paymentMethod,
-    paid: input.paid,
-    change: input.paid - total,
+    paid,
+    change: paid - total,
     created_at: now,
     updated_at: now,
     deleted_at: null,
@@ -57,7 +65,7 @@ export async function createTransaction(input: TransactionInput) {
       Object.assign(t._raw, transactionPayload);
     });
 
-    for (const item of input.items) {
+    for (const item of items) {
       const itemId = Crypto.randomUUID();
       const itemSubtotal = item.price * item.qty;
 

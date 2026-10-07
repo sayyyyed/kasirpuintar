@@ -61,7 +61,7 @@ export async function updateCategory(
     name: (category as any).name,
     sort_order: (category as any).sortOrder,
     created_at: (category as any).createdAt?.getTime?.() ?? null,
-    deleted_at: (category as any).deletedAt?.getTime?.() ?? null,
+    deleted_at: null,
     ...updates,
   });
 }

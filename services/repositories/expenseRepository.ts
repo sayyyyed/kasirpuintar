@@ -3,6 +3,7 @@ import { Q } from "@nozbe/watermelondb";
 import * as Crypto from "expo-crypto";
 import { enqueueMutation } from "./helpers";
 import type { ExpenseType } from "@/db/models";
+import { sanitizeCurrency } from "@/utils/currency";
 
 export type ExpenseEntryInput = {
   shiftId: string;
@@ -25,7 +26,7 @@ export async function createExpenseEntry(input: ExpenseEntryInput) {
     name: input.name,
     category: input.category,
     type: input.type,
-    amount: input.amount,
+    amount: sanitizeCurrency(input.amount),
     note: input.note ?? null,
     created_at: now,
     updated_at: now,

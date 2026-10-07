@@ -2,6 +2,7 @@ import { database } from "@/db";
 import { Q } from "@nozbe/watermelondb";
 import * as Crypto from "expo-crypto";
 import { enqueueMutation } from "./helpers";
+import { sanitizeCurrency } from "@/utils/currency";
 
 export type PayrollInput = {
   userId: string;
@@ -52,8 +53,8 @@ export async function createPayrollPeriod(input: PayrollInput) {
     period_start: input.periodStart,
     period_end: input.periodEnd,
     total_hours: input.totalHours,
-    hourly_rate: input.hourlyRate,
-    gross_pay: input.grossPay,
+    hourly_rate: sanitizeCurrency(input.hourlyRate),
+    gross_pay: sanitizeCurrency(input.grossPay),
     status: "pending",
     paid_at: null,
     note: input.note ?? null,
@@ -102,7 +103,7 @@ export async function updateEmployeeRate(userId: string, hourlyRate: number | nu
   await database.write(async () => {
     await user.update((u: any) => {
       Object.assign(u._raw, {
-        hourly_rate: hourlyRate,
+        hourly_rate: hourlyRate == null ? null : sanitizeCurrency(hourlyRate),
         updated_at: now,
       });
     });
@@ -114,10 +115,10 @@ export async function updateEmployeeRate(userId: string, hourlyRate: number | nu
     email: (user as any).email,
     role: (user as any).role,
     pin_hash: (user as any).pinHash ?? null,
-    hourly_rate: hourlyRate,
+    hourly_rate: hourlyRate == null ? null : sanitizeCurrency(hourlyRate),
     active: (user as any).active,
     created_at: (user as any).createdAt?.getTime?.() ?? null,
     updated_at: now,
-    deleted_at: (user as any).deletedAt?.getTime?.() ?? null,
+    deleted_at: null,
   });
 }

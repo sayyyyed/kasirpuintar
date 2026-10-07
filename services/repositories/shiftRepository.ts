@@ -66,7 +66,7 @@ export async function clockOut(shiftId: string, closingCash: number) {
     expense_total: (shift as any).expenseTotal,
     status: (shift as any).status,
     created_at: (shift as any).createdAt?.getTime?.() ?? null,
-    deleted_at: (shift as any).deletedAt?.getTime?.() ?? null,
+    deleted_at: null,
   };
   await enqueueMutation("shifts", shiftId, "upsert", {
     ...raw,
@@ -118,7 +118,7 @@ export async function updateShiftTotals(shiftId: string) {
     expense_total: expenseTotal,
     status: (shift as any).status,
     created_at: (shift as any).createdAt?.getTime?.() ?? null,
-    deleted_at: (shift as any).deletedAt?.getTime?.() ?? null,
+    deleted_at: null,
     updated_at: now,
   });
 }
